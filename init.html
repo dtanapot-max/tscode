@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TS Code - Modular Workspace (Pure Vanilla JS)</title>
+
+  <!-- =========================================================================
+       STAGE 0: CORE RESILIENT STYLES
+       ========================================================================= -->
+  <style id="bundle-css">
+    :root {
+      --bg: #1e1e1e;
+      --surface: #252526;
+      --surface-elevated: #2d2d2d;
+      --border: #374151;
+      --text: #cccccc;
+      --text-bright: #ffffff;
+      --text-muted: #858585;
+      --accent: #007acc;
+      --accent-hover: #1f8ad2;
+      --danger: #f14c4c;
+      --success: #89d185;
+      --radius: 3px;
+      --topbar-h: 28px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    html, body {
+      background-color: var(--bg);
+      color: var(--text);
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+    }
+    #root {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      height: calc(100% - var(--log-space, 22px));
+      position: relative;
+      overflow: hidden;
+    }
+    .boot-status {
+      margin: auto;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 24px;
+      text-align: center;
+    }
+
+    /* Top Toolbar */
+    .c3-topbar {
+      height: var(--topbar-h);
+      min-height: var(--topbar-h);
+      background: #181818;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+    .c3-topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #007acc;
+      color: #ffffff;
+      font-weight: 800;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: var(--radius);
+      font-size: 0.74rem;
+      user-select: none;
+    }
+    .chapter-select {
+      background: var(--surface);
+      color: var(--text-bright);
+      border: 1px solid var(--border);
+      height: 22px;
+      padding: 0 6px;
+      border-radius: var(--radius);
+      font-size: 0.74rem;
+      outline: none;
+      max-width: 280px;
+      cursor: pointer;
+    }
+    .c3-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .layout-control-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .layout-toggle-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      height: 20px;
+      padding: 0 5px;
+      font-size: 0.85rem;
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .layout-toggle-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-bright); }
+    .layout-toggle-btn.active { color: var(--accent); background: rgba(0, 122, 204, 0.15); border-color: rgba(0, 122, 204, 0.4); }
+
+    .bundle-btn {
+      background: #238636;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      height: 20px;
+      padding: 0 8px;
+      font-size: 0.70rem;
+      font-weight: 700;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .bundle-btn:hover { background: #2ea043; }
+
+    /* Shell & Docks */
+    .c3-shell {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      height: calc(100% - var(--topbar-h));
+      position: relative;
+      overflow: hidden;
+    }
+    .c3-dock {
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 30;
+      flex-shrink: 0;
+    }
+    .c3-dock-left { border-right: 1px solid var(--border); }
+    .c3-dock-right { border-left: 1px solid var(--border); }
+
+    .dock-header {
+      height: 26px;
+      min-height: 26px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #181818;
+      font-size: 0.70rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .dock-title-group {
+      display: flex;
+      align-items: center;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .dock-actions { display: flex; align-items: center; }
+    .dock-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 2px;
+      font-size: 0.80rem;
+      line-height: 1;
+    }
+    .dock-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    .c3-splitter {
+      position: relative;
+      width: 4px;
+      background: var(--border);
+      cursor: col-resize;
+      flex-shrink: 0;
+      user-select: none;
+      z-index: 35;
+    }
+    .c3-splitter:hover, .c3-splitter.is-dragging { background: var(--accent); }
+
+    .dock-content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    /* Stage Area */
+    .c3-stage {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .editor-tab-strip {
+      height: 26px;
+      background: #252526;
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .editor-tab-strip::-webkit-scrollbar { display: none; }
+    .editor-tab {
+      height: 26px;
+      padding: 0 4px 0 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      background: #2d2d2d;
+      border-right: 1px solid rgba(0, 0, 0, 0.25);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .editor-tab:hover { background: #323233; color: var(--text-bright); }
+    .editor-tab.active {
+      background: #1e1e1e;
+      color: var(--text-bright);
+      border-top: 2px solid var(--accent);
+    }
+    .tab-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 0.85rem;
+      border-radius: 2px;
+      padding: 0 4px;
+      line-height: 1;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tab-close-btn:hover { background: rgba(255, 255, 255, 0.2); color: #ffffff; }
+
+    .stage-editor-box {
+      flex: 1 1 auto;
+      overflow: hidden;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Action Bar (สะอาด เรียบหรู ตัดปุ่มซ้ำซ้อนออก) */
+    .stage-action-bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+      width: 100%;
+    }
+    .stage-action-bar-left {
+      flex: 1;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stage-action-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .stage-empty-box {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+      padding: 30px;
+    }
+    .stage-empty-title {
+      font-size: 0.95rem;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+
+    /* Logger Styling & Colors */
+    .log-dock {
+      --log-bg: #181818; --log-line: #2d2d2d; --log-text: #cccccc; --log-muted: #858585;
+      position: fixed; inset: auto 0 0; z-index: 10000; box-sizing: border-box; width: 100%;
+      border-top: 1px solid var(--log-line); background: var(--log-bg); color: var(--log-text);
+      font: 10px/1 ui-monospace, monospace; text-align: left;
+    }
+    .log-dock * { box-sizing: border-box; }
+    .log-dock [hidden] { display: none !important; }
+    .log-dock [data-level="error"] { --log-color: #f14c4c; }
+    .log-dock [data-level="warn"] { --log-color: #cca700; }
+    .log-dock [data-level="info"] { --log-color: #007acc; }
+    .log-dock [data-level="success"] { --log-color: #89d185; }
+    .log-dock [data-level="debug"] { --log-color: #c586c0; }
+    .log-dock [data-level="all"] { --log-color: #ffffff; }
+
+    .log-dock .log-handle {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      cursor: row-resize;
+    }
+    .log-dock .log-handle:hover, .log-dock.is-resizing .log-handle { background: var(--accent); }
+    .log-dock .log-bar { display: flex; align-items: center; gap: 5px; height: 20px; padding: 1px 8px; }
+    .log-dock .log-dot { width: 6px; height: 6px; border-radius: 50%; background: #007acc; flex-shrink: 0; }
+    .log-dock .log-dot[data-mode="online"] { background: #89d185; }
+    .log-dock .log-dot[data-mode="offline"] { background: #cca700; }
+    .log-dock .log-filters { display: inline-flex; gap: 1px; border: 1px solid var(--log-line); border-radius: 3px; background: #252526; }
+    .log-dock .log-btn { appearance: none; display: inline-flex; align-items: center; gap: 2px; min-height: 16px; padding: 1px 4px; border: none; border-radius: 2px; background: transparent; color: var(--log-color, var(--log-text)); font: inherit; font-size: 9.5px; cursor: pointer; }
+    .log-dock .log-btn:hover { background: #333333; }
+    .log-dock .log-btn[aria-pressed="true"] { background: #37373d; color: var(--log-color); font-weight: 700; }
+    .log-dock .log-actions { display: flex; gap: 3px; margin-left: auto; }
+    .log-dock .log-actions .log-btn { border: 1px solid var(--log-line); padding: 1px 5px; border-radius: 3px; }
+    .log-dock .log-actions .log-copy-btn { background: #007acc; color: #fff; }
+    .log-dock .log-body { padding: 4px 8px 6px; overflow: auto; font-size: 10.5px; }
+    .log-dock .log-stream { display: grid; gap: 3px; }
+    .log-dock .log-entry { display: flex; flex-wrap: wrap; gap: 2px 6px; padding: 3px 6px; border-left: 2px solid var(--log-color); background: #1e1e1e; }
+    .log-dock .log-time { color: var(--log-muted); font-size: 9.5px; }
+    .log-dock .log-level { color: var(--log-color); font-size: 9.5px; font-weight: 700; }
+    .log-dock .log-cat { color: #858585; font-size: 9.5px; border: 1px solid var(--log-line); border-radius: 2px; padding: 0 3px; }
+    .log-dock .log-meta { color: var(--log-muted); background: #252526; font-size: 10px; border-radius: 2px; padding: 0 4px; }
+    .log-space { display: block; width: 100%; height: 0; pointer-events: none; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    input[type="text"], textarea {
+      background: #2d2d2d;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-bright);
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      outline: none;
+      width: 100%;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+    textarea { flex: 1 1 auto; height: 100%; min-height: 0; font-family: ui-monospace, Consolas, monospace; line-height: 1.5; resize: none; }
+
+    /* Compact Card in Workspace */
+    .card-item {
+      padding: 6px 8px;
+      background: var(--surface-elevated);
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      margin-bottom: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .card-item:hover { border-color: var(--border); }
+    .card-item.active { border-color: var(--accent); background: rgba(0, 122, 204, 0.2); }
+    .card-title {
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--text-bright);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .card-del-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-size: 0.74rem;
+      line-height: 1;
+      opacity: 0.6;
+    }
+    .card-del-btn:hover { background: var(--danger); color: #fff; opacity: 1; }
+
+    .btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      font-size: 0.74rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      height: 28px;
+      transition: background-color 0.15s, opacity 0.15s;
+    }
+    .btn:hover { background: #37373d; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn.primary { background: var(--accent); color: #ffffff; border: none; }
+    .btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn.danger { background: rgba(241, 76, 76, 0.15); color: var(--danger); border-color: rgba(241, 76, 76, 0.3); }
+    .btn.danger:hover:not(:disabled) { background: var(--danger); color: #ffffff; }
+
+    .prop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.72rem;
+    }
+    .prop-key { color: var(--text-muted); }
+    .prop-val { font-weight: 600; font-family: monospace; color: var(--text-bright); }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(2px);
+      z-index: 50000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      box-sizing: border-box;
+    }
+    .modal-box {
+      background: #252526;
+      border: 1px solid #454545;
+      border-radius: 6px;
+      width: 880px;
+      max-width: 100%;
+      height: 90vh;
+      max-height: 640px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    }
+    .modal-header {
+      height: 38px;
+      min-height: 38px;
+      background: #1e1e1e;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+    .modal-tabs {
+      display: flex;
+      gap: 5px;
+      background: #181818;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .modal-tab-btn {
+      background: #2d2d2d;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      font-size: 0.76rem;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .modal-tab-btn:hover { background: #383838; color: #fff; }
+    .modal-tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      border-color: var(--accent-hover);
+    }
+    .modal-code-view {
+      flex: 1 1 auto;
+      padding: 14px;
+      background: #1e1e1e;
+      color: #89d185;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.80rem;
+      line-height: 1.5;
+      overflow: auto;
+      border: none;
+      resize: none;
+      outline: none;
+      white-space: pre;
+    }
+    .modal-footer {
+      height: 44px;
+      min-height: 44px;
+      background: #1e1e1e;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+  </style>
+
+  <!-- =========================================================================
+       STAGE 1: RESILIENT LOGGER CORE
+       ========================================================================= -->
+  <script id="bundle-logger">
+    (function (global) {
+      'use strict';
+      const levels = { error: 'ERR', warn: 'WARN', info: 'INFO', success: 'SUCC', debug: 'DBG' };
+      const defaults = { max: 250, height: 180, open: false, persist: true, key: 'ts_logger_dock_state_v8' };
+      let options = { ...defaults };
+      let entries = [];
+      let active = 'all';
+      let opened = false;
+      let height = 180;
+      let ui = null;
+      let events, frame = 0, saveTimer = 0;
+
+      function json(value, indent) {
+        try { return JSON.stringify(value, null, indent) ?? 'null'; } catch (_) { return '"[Unserializable]"'; }
+      }
+      function limit(value, fallback, min, max) {
+        return typeof value === 'number' && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value))) : fallback;
+      }
+      function node(tag, cls, content) {
+        const el = document.createElement(tag);
+        if (cls) el.className = cls;
+        if (content !== undefined) el.textContent = content;
+        return el;
+      }
+      function button(label, title) {
+        const el = node('button', 'log-btn', label);
+        el.type = 'button';
+        el.title = title;
+        el.setAttribute('aria-label', title);
+        return el;
+      }
+      function listen(target, type, handler) {
+        target.addEventListener(type, handler, { signal: events ? events.signal : undefined });
+      }
+      function syncSpace() {
+        if (!ui) return;
+        const size = `${Math.ceil(ui.dock.getBoundingClientRect().height)}px`;
+        ui.space.style.height = size;
+        document.documentElement.style.setProperty('--log-space', size);
+      }
+      function maxHeight() {
+        const vh = global.visualViewport ? global.visualViewport.height : global.innerHeight;
+        return Math.max(0, Math.floor(vh * 0.7 - 24));
+      }
+      function restoreState() {
+        if (!options.persist) return;
+        try {
+          const saved = JSON.parse(localStorage.getItem(options.key));
+          if (!saved || typeof saved !== 'object') return;
+          if (typeof saved.open === 'boolean') opened = saved.open;
+          if (typeof saved.height === 'number') height = limit(saved.height, height, 50, 1200);
+        } catch (_) {}
+      }
+      function saveSoon() {
+        if (!options.persist) return;
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          try { localStorage.setItem(options.key, json({ open: opened, height })); } catch (_) {}
+        }, 150);
+      }
+      function layout() {
+        if (!ui) return;
+        const max = maxHeight();
+        height = Math.min(max, Math.max(Math.min(50, max), height));
+        ui.body.hidden = !opened;
+        ui.body.style.height = `${height}px`;
+        ui.toggle.textContent = opened ? '[ย่อ]' : '[ขยาย]';
+        syncSpace();
+        saveSoon();
+      }
+      function row(entry) {
+        const el = node('div', 'log-entry');
+        el.dataset.level = entry.level;
+        const time = node('time', 'log-time', new Date(entry.time).toLocaleTimeString('en-GB', { hour12: false }));
+        el.append(time, node('span', 'log-level', levels[entry.level]),
+          node('span', 'log-cat', entry.category), node('span', 'log-msg', entry.message));
+        if (entry.meta !== null && entry.meta !== undefined) el.append(node('code', 'log-meta', json(entry.meta)));
+        return el;
+      }
+      function render() {
+        cancelAnimationFrame(frame);
+        frame = 0;
+        if (!ui) return;
+        const follow = ui.body.scrollHeight - ui.body.scrollTop - ui.body.clientHeight < 32;
+        const oldTop = ui.body.scrollTop;
+        const counts = { all: entries.length, error: 0, warn: 0, info: 0, success: 0, debug: 0 };
+        const fragment = document.createDocumentFragment();
+        for (const entry of entries) {
+          counts[entry.level]++;
+          if (active === 'all' || active === entry.level) {
+            fragment.append(row(entry));
+          }
+        }
+        ui.stream.replaceChildren(fragment);
+        for (const [level, control] of Object.entries(ui.filters)) {
+          control.count.textContent = counts[level];
+          control.btn.setAttribute('aria-pressed', String(active === level));
+        }
+        ui.body.scrollTop = follow ? ui.body.scrollHeight : oldTop;
+      }
+      function log(category, level, message, meta = null) {
+        level = String(level).toLowerCase();
+        if (!Object.hasOwn(levels, level)) level = 'info';
+        entries.push({
+          time: new Date().toISOString(),
+          category: String(category).trim().toUpperCase() || 'STAGE',
+          level,
+          message: String(message),
+          meta: meta ? JSON.parse(json(meta)) : null
+        });
+        if (entries.length > options.max) entries.shift();
+        if (level === 'error' && !opened && ui) toggle(true);
+        if (ui && !frame) frame = requestAnimationFrame(render);
+      }
+      function toggle(value) {
+        opened = typeof value === 'boolean' ? value : !opened;
+        layout();
+        if (ui && opened) ui.body.scrollTop = ui.body.scrollHeight;
+      }
+      function resize() {
+        let drag = null;
+        listen(ui.handle, 'pointerdown', e => {
+          if (!e.isPrimary || e.button !== 0) return;
+          e.preventDefault();
+          const max = maxHeight();
+          const pointerCalculatedHeight = (window.innerHeight - e.clientY) - ui.bar.offsetHeight;
+          if (!opened) {
+            opened = true;
+            height = limit(pointerCalculatedHeight, height, 50, max);
+            layout();
+          }
+          const currentActualH = ui.body.getBoundingClientRect().height || height;
+          drag = { startY: e.clientY, startH: currentActualH, id: e.pointerId };
+          if (ui.handle.setPointerCapture) ui.handle.setPointerCapture(e.pointerId);
+          ui.dock.classList.add('is-resizing');
+        });
+        listen(ui.handle, 'pointermove', e => {
+          if (!drag || drag.id !== e.pointerId) return;
+          const deltaY = drag.startY - e.clientY;
+          height = Math.min(maxHeight(), Math.max(50, Math.round(drag.startH + deltaY)));
+          layout();
+        });
+        const finish = (e) => {
+          if (!drag || drag.id !== e.pointerId) return;
+          drag = null;
+          ui.dock.classList.remove('is-resizing');
+          saveSoon();
+        };
+        listen(ui.handle, 'pointerup', finish);
+        listen(ui.handle, 'pointercancel', finish);
+      }
+      function init(config = {}) {
+        if (ui) return api;
+        if (!document.body) return api;
+        options = { ...defaults, ...config };
+        restoreState();
+        events = new AbortController();
+
+        const dock = node('aside', 'log-dock');
+        const handle = node('div', 'log-handle');
+        const bar = node('div', 'log-bar');
+        const dot = node('span', 'log-dot');
+        const filters = node('div', 'log-filters');
+        const controls = {};
+
+        for (const [level, label] of Object.entries({ all: 'ALL', ...levels })) {
+          const btn = button(`${label} `, `Filter ${label}`);
+          btn.dataset.level = level;
+          const count = node('span', 'log-count', '0');
+          btn.append(count);
+          filters.append(btn);
+          controls[level] = { btn, count };
+          listen(btn, 'click', () => { active = level; render(); });
+        }
+
+        const actions = node('div', 'log-actions');
+        const copyBtn = button('⧉ AI Output', 'Copy logs for AI analysis');
+        copyBtn.classList.add('log-copy-btn');
+        const clearBtn = button('ล้าง', 'Clear logs');
+        const toggleBtn = button('[ขยาย]', 'Toggle drawer');
+        actions.append(copyBtn, clearBtn, toggleBtn);
+        bar.append(dot, filters, actions);
+
+        const body = node('div', 'log-body');
+        const stream = node('div', 'log-stream');
+        body.append(stream);
+        dock.append(handle, bar, body);
+        const space = node('div', 'log-space');
+
+        ui = { dock, handle, bar, dot, filters: controls, body, stream, copyBtn, space, toggle: toggleBtn };
+        document.body.append(space, dock);
+
+        listen(toggleBtn, 'click', () => toggle());
+        listen(clearBtn, 'click', () => { entries = []; render(); });
+        listen(copyBtn, 'click', async () => {
+          try {
+            await navigator.clipboard.writeText(JSON.stringify(entries, null, 2));
+            copyBtn.textContent = 'Copied';
+            setTimeout(() => { if (copyBtn) copyBtn.textContent = '⧉ AI Output'; }, 1500);
+          } catch (_) {}
+        });
+
+        listen(global, 'resize', layout);
+        resize();
+        layout();
+        render();
+        return api;
+      }
+      const api = { init, log, toggle, setMode: (m) => { if (ui) ui.dot.dataset.mode = m; } };
+      for (const level of Object.keys(levels)) {
+        api[level] = (cat, msg, meta) => log(cat, level, msg, meta);
+      }
+      global.Logger = Object.freeze(api);
+    })(window);
+
+    window.onerror = function (msg, src, lin, col, err) {
+      if (window.Logger) Logger.log('FATAL-ERROR', 'error', `${msg} [${src ? src.split('/').pop() : 'inline'}:${lin}:${col}]`, { stack: err?.stack });
+      return false;
+    };
+    window.onunhandledrejection = function (e) {
+      if (window.Logger) Logger.log('UNHANDLED-PROMISE', 'error', `Promise: ${e.reason?.message || e.reason}`);
+    };
+  </script>
+</head>
+
+<body>
+  <div id="root">
+    <div class="boot-status">Loading Pure Vanilla Workspace...</div>
+  </div>
+
+  <div id="modal-root"></div>
+
+  <!-- =========================================================================
+       STAGE 2: PURE JS WORKSPACE ENGINE (No React, 100% Native DOM)
+       ========================================================================= -->
+  <script type="module">
+    Logger.init({ open: false, persist: true });
+    Logger.setMode(navigator.onLine ? 'online' : 'offline');
+    Logger.log('BOOTLOADER', 'info', 'Pure Vanilla Workspace Initialized.');
+
+    const STORAGE_KEY = 'ts_workspace_clean_v8';
+
+    const DEFAULT_PROJECTS = [
+      {
+        id: 'doc_index',
+        filename: 'Index.md',
+        category: 'Architecture',
+        description: '# Index.md\n\n## TS Code - Pure Vanilla JS Workspace\n- **Engine:** 100% Native Browser DOM\n- **React Dependency:** Removed (0 KB Bundle)\n- **Performance:** Instantaneous render'
+      },
+      {
+        id: 'doc_changelog',
+        filename: 'Changelog.md',
+        category: 'Documentation',
+        description: '# Changelog.md\n\n## [v8.2.0-purejs]\n- Removed redundant close-view button to optimize ergonomics and prevent tab desync.\n- Enhanced State Store with duplicate-free Tab Closing and Smart File Numbering.\n- Synchronized version tags across Runtime and Production Bundle sources.'
+      }
+    ];
+
+    class WorkspaceStateStore {
+      constructor() {
+        const loaded = this.load();
+        if (loaded && loaded.projects?.length > 0) {
+          this.projects = loaded.projects;
+          this.openTabIds = loaded.openTabIds || [];
+          this.activeId = loaded.activeId || null;
+        } else {
+          this.projects = JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
+          this.openTabIds = ['doc_index', 'doc_changelog'];
+          this.activeId = 'doc_index';
+        }
+        this.subscribers = new Set();
+      }
+
+      subscribe(cb) {
+        this.subscribers.add(cb);
+        return () => this.subscribers.delete(cb);
+      }
+
+      notify() {
+        this.save();
+        this.subscribers.forEach(cb => cb());
+      }
+
+      save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            projects: this.projects,
+            openTabIds: this.openTabIds,
+            activeId: this.activeId
+          }));
+        } catch (_) {}
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch (_) { return null; }
+      }
+
+      getActive() {
+        return this.projects.find(p => p.id === this.activeId) || null;
+      }
+
+      select(id) {
+        if (!this.projects.some(p => p.id === id)) return;
+        if (!this.openTabIds.includes(id)) {
+          this.openTabIds.push(id);
+        }
+        this.activeId = id;
+        Logger.log('WORKSPACE', 'info', `Swapped view to: [${id}]`);
+        this.notify();
+      }
+
+      closeTab(id) {
+        if (!this.openTabIds.includes(id)) return;
+
+        const targetIndex = this.openTabIds.indexOf(id);
+        this.openTabIds = this.openTabIds.filter(t => t !== id);
+        if (this.activeId === id) {
+          if (this.openTabIds.length > 0) {
+            const nextIndex = Math.min(targetIndex, this.openTabIds.length - 1);
+            this.activeId = this.openTabIds[nextIndex];
+          } else {
+            this.activeId = null;
+          }
+        }
+        Logger.log('WORKSPACE', 'info', `Closed tab: [${id}]`);
+        this.notify();
+      }
+
+      createFile() {
+        let counter = 1;
+        const existingNames = new Set(this.projects.map(p => p.filename));
+        while (existingNames.has(`document_${counter}.md`)) {
+          counter++;
+        }
+
+        const newDoc = {
+          id: 'doc_' + Date.now(),
+          filename: `document_${counter}.md`,
+          category: 'General',
+          description: `# document_${counter}.md\n\nเขียนเนื้อหาเอกสารที่นี่...`,
+          updatedAt: new Date().toISOString()
+        };
+        this.projects.push(newDoc);
+        this.openTabIds.push(newDoc.id);
+        this.activeId = newDoc.id;
+        Logger.log('WORKSPACE', 'success', `Created file: [${newDoc.filename}]`);
+        this.notify();
+      }
+
+      deleteFile(id) {
+        const target = this.projects.find(p => p.id === id);
+        if (!target) return;
+        if (!confirm(`คุณต้องการลบไฟล์ "${target.filename}" ใช่หรือไม่?`)) return;
+
+        this.projects = this.projects.filter(p => p.id !== id);
+        this.closeTab(id);
+        Logger.log('WORKSPACE', 'warn', `Deleted file: [${target.filename}]`);
+        this.notify();
+      }
+
+      updateActive(patch) {
+        const item = this.getActive();
+        if (item) {
+          Object.assign(item, patch);
+          item.updatedAt = new Date().toISOString();
+          this.notify();
+        }
+      }
+    }
+
+    const store = new WorkspaceStateStore();
+
+    // =========================================================================
+    // PRODUCTION SOURCE TEMPLATES
+    // =========================================================================
+    const BUNDLE_SOURCES = {
+      'index.html': `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TS Code - Production Vanilla JS</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/logger.js"><\/script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="js/app.js"><\/script>
+</body>
+</html>`,
+
+      'css/app.css': document.getElementById('bundle-css').textContent.trim(),
+
+      'js/logger.js': document.getElementById('bundle-logger').textContent.trim(),
+
+      'js/store.js': `const STORAGE_KEY = 'ts_workspace_production_v1';
+
+export class WorkspaceStateStore {
+  constructor() {
+    const loaded = this.load();
+    if (loaded && loaded.projects?.length > 0) {
+      this.projects = loaded.projects;
+      this.openTabIds = loaded.openTabIds || [];
+      this.activeId = loaded.activeId || null;
+    } else {
+      this.projects = [
+        {
+          id: 'doc_index',
+          filename: 'Index.md',
+          category: 'Architecture',
+          description: '# Index.md\\n\\n## TS Code - Pure Vanilla JS Workspace\\n- **Engine:** 100% Native Browser DOM\\n- **React Dependency:** Removed (0 KB Bundle)\\n- **Performance:** Instantaneous render'
+        },
+        {
+          id: 'doc_changelog',
+          filename: 'Changelog.md',
+          category: 'Documentation',
+          description: '# Changelog.md\\n\\n## [v8.2.0-purejs]\\n- Removed redundant close-view button to optimize ergonomics and prevent tab desync.\\n- Enhanced State Store with duplicate-free Tab Closing and Smart File Numbering.\\n- Synchronized version tags across Runtime and Production Bundle sources.'
+        }
+      ];
+      this.openTabIds = ['doc_index', 'doc_changelog'];
+      this.activeId = 'doc_index';
+    }
+    this.subscribers = new Set();
+  }
+
+  subscribe(cb) {
+    this.subscribers.add(cb);
+    return () => this.subscribers.delete(cb);
+  }
+
+  notify() {
+    this.save();
+    this.subscribers.forEach(cb => cb());
+  }
+
+  save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        projects: this.projects,
+        openTabIds: this.openTabIds,
+        activeId: this.activeId
+      }));
+    } catch (_) {}
+  }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) { return null; }
+  }
+
+  getActive() {
+    return this.projects.find(p => p.id === this.activeId) || null;
+  }
+
+  select(id) {
+    if (!this.projects.some(p => p.id === id)) return;
+    if (!this.openTabIds.includes(id)) {
+      this.openTabIds.push(id);
+    }
+    this.activeId = id;
+    if (window.Logger) Logger.log('WORKSPACE', 'info', \`Swapped view to: [\${id}]\`);
+    this.notify();
+  }
+
+  closeTab(id) {
+    if (!this.openTabIds.includes(id)) return;
+    const targetIndex = this.openTabIds.indexOf(id);
+    this.openTabIds = this.openTabIds.filter(t => t !== id);
+    if (this.activeId === id) {
+      if (this.openTabIds.length > 0) {
+        const nextIndex = Math.min(targetIndex, this.openTabIds.length - 1);
+        this.activeId = this.openTabIds[nextIndex];
+      } else {
+        this.activeId = null;
+      }
+    }
+    if (window.Logger) Logger.log('WORKSPACE', 'info', \`Closed tab: [\${id}]\`);
+    this.notify();
+  }
+
+  createFile() {
+    let counter = 1;
+    const existingNames = new Set(this.projects.map(p => p.filename));
+    while (existingNames.has(\`document_\${counter}.md\`)) {
+      counter++;
+    }
+
+    const newDoc = {
+      id: 'doc_' + Date.now(),
+      filename: \`document_\${counter}.md\`,
+      category: 'General',
+      description: \`# document_\${counter}.md\\n\\nเนื้อหาเอกสารเริ่มต้น...\`,
+      updatedAt: new Date().toISOString()
+    };
+    this.projects.push(newDoc);
+    this.openTabIds.push(newDoc.id);
+    this.activeId = newDoc.id;
+    if (window.Logger) Logger.log('WORKSPACE', 'success', \`Created file: [\${newDoc.filename}]\`);
+    this.notify();
+  }
+
+  deleteFile(id) {
+    const target = this.projects.find(p => p.id === id);
+    if (!target) return;
+    if (!confirm(\`คุณต้องการลบไฟล์ "\${target.filename}" ใช่หรือไม่?\`)) return;
+
+    this.projects = this.projects.filter(p => p.id !== id);
+    this.closeTab(id);
+    if (window.Logger) Logger.log('WORKSPACE', 'warn', \`Deleted file: [\${target.filename}]\`);
+    this.notify();
+  }
+
+  updateActive(patch) {
+    const item = this.getActive();
+    if (item) {
+      Object.assign(item, patch);
+      item.updatedAt = new Date().toISOString();
+      this.notify();
+    }
+  }
+}
+
+export const store = new WorkspaceStateStore();`,
+
+      'js/app.js': `import { store } from './store.js';
+
+if (window.Logger) {
+  Logger.init({ open: false, persist: true });
+  Logger.setMode(navigator.onLine ? 'online' : 'offline');
+  Logger.log('BOOTLOADER', 'info', 'TS Pure Vanilla Workspace Loaded.');
+}
+
+class WorkspaceUI {
+  constructor(container) {
+    this.root = container;
+    this.leftVisible = true;
+    this.rightVisible = true;
+    this.leftWidth = parseInt(localStorage.getItem('ts_left_dock_w') || '210', 10);
+    this.rightWidth = parseInt(localStorage.getItem('ts_right_dock_w') || '220', 10);
+
+    this.initDOM();
+    this.bindEvents();
+
+    store.subscribe(() => this.render());
+    this.render();
+  }
+
+  initDOM() {
+    this.root.innerHTML = \`
+      <div style="display:flex; flex-direction:column; width:100%; height:100%;">
+        <header class="c3-topbar">
+          <div class="c3-topbar-left">
+            <div class="brand-badge"><span>TS</span><span>PureJS</span></div>
+            <select class="chapter-select" id="chapter-select"></select>
+          </div>
+          <div class="c3-topbar-right">
+            <div class="layout-control-group">
+              <button class="layout-toggle-btn" id="btn-toggle-left" title="Toggle Side Bar (◧)">◧</button>
+              <button class="layout-toggle-btn" id="btn-toggle-right" title="Toggle Right Properties (◨)">◨</button>
+              <button class="layout-toggle-btn" id="btn-toggle-logger" title="Toggle Output Logger (◫)">◫</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="c3-shell">
+          <aside class="c3-dock c3-dock-left" id="left-dock" style="width: \${this.leftWidth}px;">
+            <div class="dock-header">
+              <div class="dock-title-group"><span>WORKSPACE</span></div>
+              <div class="dock-actions">
+                <button class="dock-btn" id="btn-close-left" title="ปิดแถบด้านข้าง">×</button>
+              </div>
+            </div>
+            <div class="dock-content">
+              <div id="file-counter" style="font-size:0.68rem; color:var(--text-muted); margin-bottom:6px;"></div>
+              <div id="file-list"></div>
+            </div>
+          </aside>
+
+          <div class="c3-splitter" id="left-splitter"></div>
+
+          <main class="c3-stage">
+            <div class="editor-tab-strip" id="tab-strip"></div>
+            <div id="stage-body" style="flex:1 1 auto; display:flex; flex-direction:column; overflow:hidden;"></div>
+          </main>
+
+          <div class="c3-splitter" id="right-splitter"></div>
+
+          <aside class="c3-dock c3-dock-right" id="right-dock" style="width: \${this.rightWidth}px;">
+            <div class="dock-header">
+              <div class="dock-title-group"><span>PROPERTIES</span></div>
+              <button class="dock-btn" id="btn-close-right" title="ปิดแถบด้านข้าง">×</button>
+            </div>
+            <div class="dock-content" id="prop-content"></div>
+          </aside>
+        </div>
+      </div>
+    \`;
+  }
+
+  bindEvents() {
+    document.getElementById('chapter-select').addEventListener('change', (e) => {
+      store.select(e.target.value);
+    });
+
+    document.getElementById('btn-toggle-left').addEventListener('click', () => {
+      this.leftVisible = !this.leftVisible;
+      this.renderLayout();
+    });
+    document.getElementById('btn-close-left').addEventListener('click', () => {
+      this.leftVisible = false;
+      this.renderLayout();
+    });
+
+    document.getElementById('btn-toggle-right').addEventListener('click', () => {
+      this.rightVisible = !this.rightVisible;
+      this.renderLayout();
+    });
+    document.getElementById('btn-close-right').addEventListener('click', () => {
+      this.rightVisible = false;
+      this.renderLayout();
+    });
+
+    document.getElementById('btn-toggle-logger').addEventListener('click', () => {
+      if (window.Logger) Logger.toggle();
+    });
+
+    this.setupSplitter('left-splitter', (dx, startW) => {
+      this.leftWidth = Math.min(480, Math.max(140, Math.round(startW + dx)));
+      document.getElementById('left-dock').style.width = \`\${this.leftWidth}px\`;
+      localStorage.setItem('ts_left_dock_w', String(this.leftWidth));
+    });
+
+    this.setupSplitter('right-splitter', (dx, startW) => {
+      this.rightWidth = Math.min(480, Math.max(160, Math.round(startW - dx)));
+      document.getElementById('right-dock').style.width = \`\${this.rightWidth}px\`;
+      localStorage.setItem('ts_right_dock_w', String(this.rightWidth));
+    });
+  }
+
+  setupSplitter(splitterId, onDrag) {
+    const el = document.getElementById(splitterId);
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = splitterId === 'left-splitter' ? this.leftWidth : this.rightWidth;
+      if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+      el.classList.add('is-dragging');
+
+      const moveHandler = (moveEvt) => onDrag(moveEvt.clientX - startX, startW);
+      const upHandler = () => {
+        el.classList.remove('is-dragging');
+        window.removeEventListener('pointermove', moveHandler);
+        window.removeEventListener('pointerup', upHandler);
+        window.removeEventListener('pointercancel', upHandler);
+      };
+
+      window.addEventListener('pointermove', moveHandler);
+      window.addEventListener('pointerup', upHandler);
+      window.addEventListener('pointercancel', upHandler);
+    });
+  }
+
+  renderLayout() {
+    const leftDock = document.getElementById('left-dock');
+    const leftSplitter = document.getElementById('left-splitter');
+    const rightDock = document.getElementById('right-dock');
+    const rightSplitter = document.getElementById('right-splitter');
+    const btnToggleLeft = document.getElementById('btn-toggle-left');
+    const btnToggleRight = document.getElementById('btn-toggle-right');
+
+    leftDock.style.display = this.leftVisible ? 'flex' : 'none';
+    leftSplitter.style.display = this.leftVisible ? 'block' : 'none';
+    btnToggleLeft.classList.toggle('active', this.leftVisible);
+
+    rightDock.style.display = this.rightVisible ? 'flex' : 'none';
+    rightSplitter.style.display = this.rightVisible ? 'block' : 'none';
+    btnToggleRight.classList.toggle('active', this.rightVisible);
+  }
+
+  handleExport(doc) {
+    if (!doc) return;
+    const blob = new Blob([doc.description || ''], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.filename.endsWith('.md') ? doc.filename : \`\${doc.filename}.md\`;
+    a.click();
+    URL.revokeObjectURL(url);
+    if (window.Logger) Logger.log('STAGE', 'success', \`Exported: [\${doc.filename}]\`);
+  }
+
+  render() {
+    const active = store.getActive();
+    this.renderLayout();
+
+    const select = document.getElementById('chapter-select');
+    select.innerHTML = \`
+      \${!active ? '<option value="" disabled selected>เลือกเปิดไฟล์งาน...</option>' : ''}
+      \${store.projects.map(p => \`
+        <option value="\${p.id}" \${active && active.id === p.id ? 'selected' : ''}>\${p.filename}</option>
+      \`).join('')}
+    \`;
+
+    document.getElementById('file-counter').textContent = \`ไฟล์ทั้งหมด (\${store.projects.length})\`;
+    const fileList = document.getElementById('file-list');
+    if (store.projects.length === 0) {
+      fileList.innerHTML = \`<div style="color:var(--text-muted); font-size:0.72rem; padding:16px 4px; text-align:center;">ไม่มีไฟล์ในระบบ</div>\`;
+    } else {
+      fileList.innerHTML = store.projects.map(p => \`
+        <div class="card-item \${active && p.id === active.id ? 'active' : ''}" data-id="\${p.id}">
+          <span class="card-title">📝 \${p.filename}</span>
+          <button type="button" class="card-del-btn" title="ลบไฟล์นี้" data-del="\${p.id}">🗑</button>
+        </div>
+      \`).join('');
+
+      fileList.querySelectorAll('.card-item').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.dataset.del) {
+            e.stopPropagation();
+            store.deleteFile(e.target.dataset.del);
+          } else {
+            store.select(card.dataset.id);
+          }
+        });
+      });
+    }
+
+    const tabStrip = document.getElementById('tab-strip');
+    tabStrip.innerHTML = store.openTabIds.map(tabId => {
+      const doc = store.projects.find(d => d.id === tabId);
+      if (!doc) return '';
+      const isActive = active && doc.id === active.id;
+      return \`
+        <div class="editor-tab \${isActive ? 'active' : ''}" data-tab="\${doc.id}">
+          <span>📝 \${doc.filename}</span>
+          <button type="button" class="tab-close-btn" data-close="\${doc.id}" title="ปิดแท็บ">×</button>
+        </div>
+      \`;
+    }).join('');
+
+    tabStrip.querySelectorAll('.editor-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        if (e.target.dataset.close) {
+          e.stopPropagation();
+          store.closeTab(e.target.dataset.close);
+        } else {
+          store.select(tab.dataset.tab);
+        }
+      });
+    });
+
+    const stageBody = document.getElementById('stage-body');
+    if (active) {
+      const isDescActive = document.activeElement && document.activeElement.id === 'stage-desc-input';
+      const isNameActive = document.activeElement && document.activeElement.id === 'stage-name-input';
+
+      if (!stageBody.querySelector('.stage-editor-box') || stageBody.querySelector('.stage-editor-box').dataset.activeId !== active.id) {
+        stageBody.innerHTML = \`
+          <div class="stage-editor-box" data-active-id="\${active.id}">
+            <div class="stage-action-bar">
+              <div class="stage-action-bar-left">
+                <label>FILE NAME</label>
+                <input type="text" id="stage-name-input" value="\${active.filename}" />
+              </div>
+              <div class="stage-action-bar-right">
+                <button class="btn primary" id="btn-save-doc">💾 บันทึกเอกสาร</button>
+                <button class="btn" id="btn-export-doc">📤 Export</button>
+                <button class="btn danger" id="btn-del-doc">🗑 ลบไฟล์นี้</button>
+              </div>
+            </div>
+
+            <div class="form-group" style="flex:1 1 auto; min-height:0; display:flex;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>MARKDOWN CONTENT (<span id="stage-cat-label">\${active.category}</span>)</label>
+                <span id="line-indicator" style="font-size:0.68rem; color:var(--text-muted);">
+                  Ln \${(active.description || '').split('\\n').length}, Col 1
+                </span>
+              </div>
+              <textarea id="stage-desc-input" placeholder="// เขียนเนื้อหาไฟล์ที่นี่..." spellcheck="false">\${active.description || ''}</textarea>
+            </div>
+          </div>
+        \`;
+
+        document.getElementById('stage-name-input').addEventListener('input', (e) => {
+          store.updateActive({ filename: e.target.value });
+        });
+        document.getElementById('stage-desc-input').addEventListener('input', (e) => {
+          store.updateActive({ description: e.target.value });
+          document.getElementById('line-indicator').textContent = \`Ln \${e.target.value.split('\\n').length}, Col 1\`;
+        });
+        
+        const saveBtn = document.getElementById('btn-save-doc');
+        saveBtn.addEventListener('click', () => {
+          if (saveBtn.disabled) return;
+          store.save();
+          if (window.Logger) Logger.log('STAGE', 'success', \`บันทึก [\${active.filename}] เรียบร้อย\`);
+          
+          saveBtn.disabled = true;
+          const orig = saveBtn.textContent;
+          saveBtn.textContent = '✓ บันทึกแล้ว';
+          setTimeout(() => {
+            saveBtn.disabled = false;
+            saveBtn.textContent = orig;
+          }, 600);
+        });
+
+        document.getElementById('btn-export-doc').addEventListener('click', () => this.handleExport(active));
+        document.getElementById('btn-del-doc').addEventListener('click', () => store.deleteFile(active.id));
+      } else {
+        if (!isNameActive) document.getElementById('stage-name-input').value = active.filename;
+        if (!isDescActive) document.getElementById('stage-desc-input').value = active.description || '';
+        document.getElementById('stage-cat-label').textContent = active.category;
+        document.getElementById('line-indicator').textContent = \`Ln \${(active.description || '').split('\\n').length}, Col 1\`;
+      }
+    } else {
+      stageBody.innerHTML = \`
+        <div class="stage-empty-box">
+          <div class="stage-empty-title">ไม่มีไฟล์ที่เปิดใช้งาน</div>
+          <p style="font-size:0.78rem; margin-bottom:14px;">
+            เลือกไฟล์จากแถบ WORKSPACE ทางซ้าย หรือกดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่
+          </p>
+          <button class="btn primary" id="btn-create-empty">＋ สร้างเอกสารใหม่</button>
+        </div>
+      \`;
+      document.getElementById('btn-create-empty').addEventListener('click', () => store.createFile());
+    }
+
+    const propContent = document.getElementById('prop-content');
+    if (active) {
+      const isCatActive = document.activeElement && document.activeElement.id === 'prop-cat-input';
+      propContent.innerHTML = \`
+        <div class="prop-row"><span class="prop-key">Category</span><span class="prop-val">\${active.category}</span></div>
+        <div class="prop-row"><span class="prop-key">Characters</span><span class="prop-val">\${(active.description || '').length}</span></div>
+        <div class="prop-row"><span class="prop-key">Lines</span><span class="prop-val">\${(active.description || '').split('\\n').length}</span></div>
+        <div class="prop-row"><span class="prop-key">Last Edit</span><span class="prop-val">\${new Date(active.updatedAt || Date.now()).toLocaleTimeString('en-GB')}</span></div>
+        <div style="margin-top:14px;" class="form-group">
+          <label>หมวดหมู่ (Category)</label>
+          <input type="text" id="prop-cat-input" value="\${active.category}" />
+        </div>
+      \`;
+
+      const catInput = document.getElementById('prop-cat-input');
+      if (isCatActive) catInput.focus();
+      catInput.addEventListener('input', (e) => {
+        store.updateActive({ category: e.target.value });
+      });
+    } else {
+      propContent.innerHTML = \`<div style="color:var(--text-muted); font-size:0.72rem; text-align:center; padding:16px 0;">ไม่มีข้อมูลคุณสมบัติ</div>\`;
+    }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  new WorkspaceUI(document.getElementById('root'));
+});`
+    };
+
+    // =========================================================================
+    // UI CONTROLLER (Native DOM Manager)
+    // =========================================================================
+    class WorkspaceUI {
+      constructor(container) {
+        this.root = container;
+        this.leftVisible = true;
+        this.rightVisible = true;
+        this.leftWidth = parseInt(localStorage.getItem('ts_left_dock_w') || '210', 10);
+        this.rightWidth = parseInt(localStorage.getItem('ts_right_dock_w') || '220', 10);
+        this.selectedBundleFile = 'index.html';
+
+        this.initDOM();
+        this.bindEvents();
+
+        store.subscribe(() => this.render());
+        this.render();
+      }
+
+      initDOM() {
+        this.root.innerHTML = `
+          <div style="display:flex; flex-direction:column; width:100%; height:100%;">
+            <header class="c3-topbar">
+              <div class="c3-topbar-left">
+                <div class="brand-badge"><span>TS</span><span>PureJS</span></div>
+                <select class="chapter-select" id="chapter-select"></select>
+              </div>
+              <div class="c3-topbar-right">
+                <button class="bundle-btn" id="btn-open-bundle" title="กดเพื่อดูโค้ดสำหรับนำไปใช้งาน">📦 ดูชุดไฟล์ระบบ</button>
+                <div class="layout-control-group">
+                  <button class="layout-toggle-btn" id="btn-toggle-left" title="Toggle Side Bar (◧)">◧</button>
+                  <button class="layout-toggle-btn" id="btn-toggle-right" title="Toggle Right Properties (◨)">◨</button>
+                  <button class="layout-toggle-btn" id="btn-toggle-logger" title="Toggle Output Logger (◫)">◫</button>
+                </div>
+              </div>
+            </header>
+
+            <div class="c3-shell">
+              <!-- Left Dock -->
+              <aside class="c3-dock c3-dock-left" id="left-dock" style="width: ${this.leftWidth}px;">
+                <div class="dock-header">
+                  <div class="dock-title-group"><span>WORKSPACE</span></div>
+                  <div class="dock-actions">
+                    <button class="dock-btn" id="btn-close-left" title="ปิดแถบด้านข้าง">×</button>
+                  </div>
+                </div>
+                <div class="dock-content">
+                  <div id="file-counter" style="font-size:0.68rem; color:var(--text-muted); margin-bottom:6px;"></div>
+                  <div id="file-list"></div>
+                </div>
+              </aside>
+
+              <!-- Left Splitter -->
+              <div class="c3-splitter" id="left-splitter"></div>
+
+              <!-- Stage -->
+              <main class="c3-stage">
+                <div class="editor-tab-strip" id="tab-strip"></div>
+                <div id="stage-body" style="flex:1 1 auto; display:flex; flex-direction:column; overflow:hidden;"></div>
+              </main>
+
+              <!-- Right Splitter -->
+              <div class="c3-splitter" id="right-splitter"></div>
+
+              <!-- Right Dock -->
+              <aside class="c3-dock c3-dock-right" id="right-dock" style="width: ${this.rightWidth}px;">
+                <div class="dock-header">
+                  <div class="dock-title-group"><span>PROPERTIES</span></div>
+                  <button class="dock-btn" id="btn-close-right" title="ปิดแถบด้านข้าง">×</button>
+                </div>
+                <div class="dock-content" id="prop-content"></div>
+              </aside>
+            </div>
+          </div>
+        `;
+      }
+
+      bindEvents() {
+        document.getElementById('chapter-select').addEventListener('change', (e) => {
+          store.select(e.target.value);
+        });
+
+        document.getElementById('btn-toggle-left').addEventListener('click', () => {
+          this.leftVisible = !this.leftVisible;
+          this.renderLayout();
+        });
+        document.getElementById('btn-close-left').addEventListener('click', () => {
+          this.leftVisible = false;
+          this.renderLayout();
+        });
+
+        document.getElementById('btn-toggle-right').addEventListener('click', () => {
+          this.rightVisible = !this.rightVisible;
+          this.renderLayout();
+        });
+        document.getElementById('btn-close-right').addEventListener('click', () => {
+          this.rightVisible = false;
+          this.renderLayout();
+        });
+
+        document.getElementById('btn-toggle-logger').addEventListener('click', () => {
+          if (window.Logger) Logger.toggle();
+        });
+
+        document.getElementById('btn-open-bundle').addEventListener('click', () => {
+          this.openBundleModal();
+        });
+
+        this.setupSplitter('left-splitter', (dx, startW) => {
+          this.leftWidth = Math.min(480, Math.max(140, Math.round(startW + dx)));
+          document.getElementById('left-dock').style.width = `${this.leftWidth}px`;
+          localStorage.setItem('ts_left_dock_w', String(this.leftWidth));
+        });
+
+        this.setupSplitter('right-splitter', (dx, startW) => {
+          this.rightWidth = Math.min(480, Math.max(160, Math.round(startW - dx)));
+          document.getElementById('right-dock').style.width = `${this.rightWidth}px`;
+          localStorage.setItem('ts_right_dock_w', String(this.rightWidth));
+        });
+      }
+
+      setupSplitter(splitterId, onDrag) {
+        const el = document.getElementById(splitterId);
+        el.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) return;
+          e.preventDefault();
+          const startX = e.clientX;
+          const startW = splitterId === 'left-splitter' ? this.leftWidth : this.rightWidth;
+          if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+          el.classList.add('is-dragging');
+
+          const moveHandler = (moveEvt) => onDrag(moveEvt.clientX - startX, startW);
+          const upHandler = () => {
+            el.classList.remove('is-dragging');
+            window.removeEventListener('pointermove', moveHandler);
+            window.removeEventListener('pointerup', upHandler);
+            window.removeEventListener('pointercancel', upHandler);
+          };
+
+          window.addEventListener('pointermove', moveHandler);
+          window.addEventListener('pointerup', upHandler);
+          window.addEventListener('pointercancel', upHandler);
+        });
+      }
+
+      renderLayout() {
+        const leftDock = document.getElementById('left-dock');
+        const leftSplitter = document.getElementById('left-splitter');
+        const rightDock = document.getElementById('right-dock');
+        const rightSplitter = document.getElementById('right-splitter');
+        const btnToggleLeft = document.getElementById('btn-toggle-left');
+        const btnToggleRight = document.getElementById('btn-toggle-right');
+
+        leftDock.style.display = this.leftVisible ? 'flex' : 'none';
+        leftSplitter.style.display = this.leftVisible ? 'block' : 'none';
+        btnToggleLeft.classList.toggle('active', this.leftVisible);
+
+        rightDock.style.display = this.rightVisible ? 'flex' : 'none';
+        rightSplitter.style.display = this.rightVisible ? 'block' : 'none';
+        btnToggleRight.classList.toggle('active', this.rightVisible);
+      }
+
+      handleExport(doc) {
+        if (!doc) return;
+        const blob = new Blob([doc.description || ''], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.filename.endsWith('.md') ? doc.filename : `${doc.filename}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        Logger.log('STAGE', 'success', `Exported: [${doc.filename}]`);
+      }
+
+      openBundleModal() {
+        const modalContainer = document.getElementById('modal-root');
+        modalContainer.innerHTML = `
+          <div class="modal-overlay" id="modal-bg">
+            <div class="modal-box" id="modal-card">
+              <div class="modal-header">
+                <span style="font-size:0.85rem; font-weight:700; color:#fff;">
+                  📦 โค้ดที่แยกไฟล์สำเร็จสำหรับ Production (Ready to Deploy)
+                </span>
+                <button class="dock-btn" id="modal-close-btn">×</button>
+              </div>
+
+              <div class="modal-tabs" id="modal-tab-bar">
+                ${Object.keys(BUNDLE_SOURCES).map(filename => `
+                  <button class="modal-tab-btn ${this.selectedBundleFile === filename ? 'active' : ''}" data-file="${filename}">
+                    ${filename}
+                  </button>
+                `).join('')}
+              </div>
+
+              <textarea class="modal-code-view" id="modal-code-text" readonly spellcheck="false"></textarea>
+
+              <div class="modal-footer">
+                <div id="modal-meta-info" style="font-size:0.72rem; color:var(--text-muted);"></div>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn" id="modal-copy-btn">📋 คัดลอกโค้ด</button>
+                  <button class="btn primary" id="modal-dl-btn">⬇ ดาวน์โหลดไฟล์นี้</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const updateModalCode = () => {
+          const content = BUNDLE_SOURCES[this.selectedBundleFile] || '';
+          document.getElementById('modal-code-text').value = content;
+          document.getElementById('modal-meta-info').innerHTML = `ไฟล์: <strong>${this.selectedBundleFile}</strong> (${content.length} ตัวอักษร)`;
+          modalContainer.querySelectorAll('.modal-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.file === this.selectedBundleFile);
+          });
+        };
+
+        modalContainer.querySelector('#modal-tab-bar').addEventListener('click', (e) => {
+          if (e.target.dataset.file) {
+            this.selectedBundleFile = e.target.dataset.file;
+            updateModalCode();
+          }
+        });
+
+        document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+        document.getElementById('modal-bg').addEventListener('click', (e) => {
+          if (e.target.id === 'modal-bg') modalContainer.innerHTML = '';
+        });
+
+        document.getElementById('modal-copy-btn').addEventListener('click', async () => {
+          const text = BUNDLE_SOURCES[this.selectedBundleFile];
+          await navigator.clipboard.writeText(text);
+          const btn = document.getElementById('modal-copy-btn');
+          btn.textContent = '✅ คัดลอกสำเร็จ!';
+          setTimeout(() => btn.textContent = '📋 คัดลอกโค้ด', 1500);
+        });
+
+        document.getElementById('modal-dl-btn').addEventListener('click', () => {
+          const content = BUNDLE_SOURCES[this.selectedBundleFile];
+          const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = this.selectedBundleFile.split('/').pop();
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+
+        updateModalCode();
+      }
+
+      render() {
+        const active = store.getActive();
+        this.renderLayout();
+
+        // 1. Topbar Select
+        const select = document.getElementById('chapter-select');
+        select.innerHTML = `
+          ${!active ? '<option value="" disabled selected>เลือกเปิดไฟล์งาน...</option>' : ''}
+          ${store.projects.map(p => `
+            <option value="${p.id}" ${active && active.id === p.id ? 'selected' : ''}>${p.filename}</option>
+          `).join('')}
+        `;
+
+        // 2. Left Dock Files
+        document.getElementById('file-counter').textContent = `ไฟล์ทั้งหมด (${store.projects.length})`;
+        const fileList = document.getElementById('file-list');
+        if (store.projects.length === 0) {
+          fileList.innerHTML = `<div style="color:var(--text-muted); font-size:0.72rem; padding:16px 4px; text-align:center;">ไม่มีไฟล์ในระบบ</div>`;
+        } else {
+          fileList.innerHTML = store.projects.map(p => `
+            <div class="card-item ${active && p.id === active.id ? 'active' : ''}" data-id="${p.id}">
+              <span class="card-title">📝 ${p.filename}</span>
+              <button type="button" class="card-del-btn" title="ลบไฟล์นี้" data-del="${p.id}">🗑</button>
+            </div>
+          `).join('');
+
+          fileList.querySelectorAll('.card-item').forEach(card => {
+            card.addEventListener('click', (e) => {
+              if (e.target.dataset.del) {
+                e.stopPropagation();
+                store.deleteFile(e.target.dataset.del);
+              } else {
+                store.select(card.dataset.id);
+              }
+            });
+          });
+        }
+
+        // 3. Tab Strip
+        const tabStrip = document.getElementById('tab-strip');
+        tabStrip.innerHTML = store.openTabIds.map(tabId => {
+          const doc = store.projects.find(d => d.id === tabId);
+          if (!doc) return '';
+          const isActive = active && doc.id === active.id;
+          return `
+            <div class="editor-tab ${isActive ? 'active' : ''}" data-tab="${doc.id}">
+              <span>📝 ${doc.filename}</span>
+              <button type="button" class="tab-close-btn" data-close="${doc.id}" title="ปิดแท็บ">×</button>
+            </div>
+          `;
+        }).join('');
+
+        tabStrip.querySelectorAll('.editor-tab').forEach(tab => {
+          tab.addEventListener('click', (e) => {
+            if (e.target.dataset.close) {
+              e.stopPropagation();
+              store.closeTab(e.target.dataset.close);
+            } else {
+              store.select(tab.dataset.tab);
+            }
+          });
+        });
+
+        // 4. Stage
+        const stageBody = document.getElementById('stage-body');
+        if (active) {
+          const isDescActive = document.activeElement && document.activeElement.id === 'stage-desc-input';
+          const isNameActive = document.activeElement && document.activeElement.id === 'stage-name-input';
+
+          if (!stageBody.querySelector('.stage-editor-box') || stageBody.querySelector('.stage-editor-box').dataset.activeId !== active.id) {
+            stageBody.innerHTML = `
+              <div class="stage-editor-box" data-active-id="${active.id}">
+                <!-- แถว Action Bar วางปุ่มในระดับเดียวกับ FILE NAME (ตัดปุ่มปิดหน้าจอออกแล้ว) -->
+                <div class="stage-action-bar">
+                  <div class="stage-action-bar-left">
+                    <label>FILE NAME</label>
+                    <input type="text" id="stage-name-input" value="${active.filename}" />
+                  </div>
+                  <div class="stage-action-bar-right">
+                    <button class="btn primary" id="btn-save-doc">💾 บันทึกเอกสาร</button>
+                    <button class="btn" id="btn-export-doc">📤 Export</button>
+                    <button class="btn danger" id="btn-del-doc">🗑 ลบไฟล์นี้</button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="flex:1 1 auto; min-height:0; display:flex;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label>MARKDOWN CONTENT (<span id="stage-cat-label">${active.category}</span>)</label>
+                    <span id="line-indicator" style="font-size:0.68rem; color:var(--text-muted);">
+                      Ln ${(active.description || '').split('\n').length}, Col 1
+                    </span>
+                  </div>
+                  <textarea id="stage-desc-input" placeholder="// เขียนเนื้อหาไฟล์ที่นี่..." spellcheck="false">${active.description || ''}</textarea>
+                </div>
+              </div>
+            `;
+
+            document.getElementById('stage-name-input').addEventListener('input', (e) => {
+              store.updateActive({ filename: e.target.value });
+            });
+            document.getElementById('stage-desc-input').addEventListener('input', (e) => {
+              store.updateActive({ description: e.target.value });
+              document.getElementById('line-indicator').textContent = `Ln ${e.target.value.split('\n').length}, Col 1`;
+            });
+
+            const saveBtn = document.getElementById('btn-save-doc');
+            saveBtn.addEventListener('click', () => {
+              if (saveBtn.disabled) return;
+              store.save();
+              Logger.log('STAGE', 'success', `บันทึก [${active.filename}] เรียบร้อย`);
+              
+              saveBtn.disabled = true;
+              const originalLabel = saveBtn.textContent;
+              saveBtn.textContent = '✓ บันทึกแล้ว';
+              setTimeout(() => {
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalLabel;
+              }, 600);
+            });
+
+            document.getElementById('btn-export-doc').addEventListener('click', () => this.handleExport(active));
+            document.getElementById('btn-del-doc').addEventListener('click', () => store.deleteFile(active.id));
+          } else {
+            if (!isNameActive) document.getElementById('stage-name-input').value = active.filename;
+            if (!isDescActive) document.getElementById('stage-desc-input').value = active.description || '';
+            document.getElementById('stage-cat-label').textContent = active.category;
+            document.getElementById('line-indicator').textContent = `Ln ${(active.description || '').split('\n').length}, Col 1`;
+          }
+        } else {
+          stageBody.innerHTML = `
+            <div class="stage-empty-box">
+              <div class="stage-empty-title">ไม่มีไฟล์ที่เปิดใช้งาน</div>
+              <p style="font-size:0.78rem; margin-bottom:14px;">
+                เลือกไฟล์จากแถบ WORKSPACE ทางซ้าย หรือกดปุ่มด้านล่างเพื่อสร้างไฟล์ใหม่
+              </p>
+              <button class="btn primary" id="btn-create-empty">＋ สร้างเอกสารใหม่</button>
+            </div>
+          `;
+          document.getElementById('btn-create-empty').addEventListener('click', () => store.createFile());
+        }
+
+        // 5. Right Properties
+        const propContent = document.getElementById('prop-content');
+        if (active) {
+          const isCatActive = document.activeElement && document.activeElement.id === 'prop-cat-input';
+          propContent.innerHTML = `
+            <div class="prop-row"><span class="prop-key">Category</span><span class="prop-val">${active.category}</span></div>
+            <div class="prop-row"><span class="prop-key">Characters</span><span class="prop-val">${(active.description || '').length}</span></div>
+            <div class="prop-row"><span class="prop-key">Lines</span><span class="prop-val">${(active.description || '').split('\n').length}</span></div>
+            <div class="prop-row"><span class="prop-key">Last Edit</span><span class="prop-val">${new Date(active.updatedAt || Date.now()).toLocaleTimeString('en-GB')}</span></div>
+            <div style="margin-top:14px;" class="form-group">
+              <label>หมวดหมู่ (Category)</label>
+              <input type="text" id="prop-cat-input" value="${active.category}" />
+            </div>
+          `;
+
+          const catInput = document.getElementById('prop-cat-input');
+          if (isCatActive) catInput.focus();
+          catInput.addEventListener('input', (e) => {
+            store.updateActive({ category: e.target.value });
+          });
+        } else {
+          propContent.innerHTML = `<div style="color:var(--text-muted); font-size:0.72rem; text-align:center; padding:16px 0;">ไม่มีข้อมูลคุณสมบัติ</div>`;
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      new WorkspaceUI(document.getElementById('root'));
+      Logger.log('HYDRATE', 'success', 'TS Code Clean Pure JS Workspace Ready');
+    });
+  </script>
+</body>
+</html>
