@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TS Code - Production Vanilla JS Workspace</title>
+  <style id="app-style">
+    :root {
+      --bg: #1e1e1e;
+      --surface: #252526;
+      --surface-elevated: #2d2d2d;
+      --border: #374151;
+      --text: #cccccc;
+      --text-bright: #ffffff;
+      --text-muted: #858585;
+      --accent: #007acc;
+      --accent-hover: #1f8ad2;
+      --danger: #f14c4c;
+      --success: #89d185;
+      --radius: 3px;
+      --topbar-h: 28px;
+      --log-space: 0px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    html, body {
+      background-color: var(--bg);
+      color: var(--text);
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+    }
+    #root {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      height: calc(100% - var(--log-space, 0px));
+      position: relative;
+      overflow: hidden;
+    }
+    .c3-topbar {
+      height: var(--topbar-h);
+      min-height: var(--topbar-h);
+      background: #181818;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+    .c3-topbar-left, .c3-topbar-right { display: flex; align-items: center; gap: 8px; }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 800;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: var(--radius);
+      font-size: 0.74rem;
+      user-select: none;
+    }
+    .chapter-select {
+      background: var(--surface);
+      color: var(--text-bright);
+      border: 1px solid var(--border);
+      height: 22px;
+      padding: 0 6px;
+      border-radius: var(--radius);
+      font-size: 0.74rem;
+      outline: none;
+      max-width: 240px;
+      cursor: pointer;
+    }
+    .layout-control-group { display: inline-flex; align-items: center; gap: 4px; }
+    .layout-toggle-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      height: 20px;
+      padding: 0 6px;
+      font-size: 0.85rem;
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .layout-toggle-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-bright); }
+    .layout-toggle-btn.active { color: var(--accent); background: rgba(0, 122, 204, 0.15); border-color: rgba(0, 122, 204, 0.4); }
+    
+    .bundle-btn {
+      background: #238636;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      height: 20px;
+      padding: 0 8px;
+      font-size: 0.70rem;
+      font-weight: 700;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .bundle-btn:hover { background: #2ea043; }
+
+    .c3-shell {
+      display: flex;
+      flex: 1 1 auto;
+      min-width: 0;
+      width: 100%;
+      height: calc(100% - var(--topbar-h));
+      position: relative;
+      overflow: hidden;
+    }
+    .c3-dock {
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 30;
+      flex-shrink: 0;
+    }
+    .c3-dock-left { border-right: 1px solid var(--border); }
+    .c3-dock-right { border-left: 1px solid var(--border); }
+
+    .dock-header {
+      height: 26px;
+      min-height: 26px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #181818;
+      font-size: 0.70rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .dock-title-group { letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+    .dock-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 2px;
+      font-size: 0.80rem;
+    }
+    .dock-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    .c3-splitter {
+      width: 4px;
+      background: var(--border);
+      cursor: col-resize;
+      flex-shrink: 0;
+      user-select: none;
+      z-index: 35;
+    }
+    .c3-splitter:hover, .c3-splitter.is-dragging { background: var(--accent); }
+    .dock-content { flex: 1 1 auto; overflow-y: auto; padding: 6px; }
+
+    .c3-stage {
+      flex: 1 1 auto;
+      min-width: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .editor-tab-strip {
+      height: 26px;
+      background: #252526;
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .editor-tab-strip::-webkit-scrollbar { display: none; }
+    .editor-tab {
+      height: 26px;
+      padding: 0 4px 0 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      background: #2d2d2d;
+      border-right: 1px solid rgba(0, 0, 0, 0.25);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .editor-tab:hover { background: #323233; color: var(--text-bright); }
+    .editor-tab.active { background: #1e1e1e; color: var(--text-bright); border-top: 2px solid var(--accent); }
+    .tab-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 0.85rem;
+      padding: 0 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tab-close-btn:hover { background: rgba(255, 255, 255, 0.2); color: #ffffff; }
+
+    .stage-editor-box {
+      flex: 1 1 auto;
+      overflow: hidden;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stage-action-bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .stage-action-bar-left { flex: 1; max-width: 360px; display: flex; flex-direction: column; gap: 4px; }
+    .stage-action-bar-right { display: flex; align-items: center; gap: 6px; }
+
+    .stage-empty-box { margin: auto; text-align: center; color: var(--text-muted); padding: 30px; }
+    .stage-empty-title { font-size: 0.95rem; color: var(--text-bright); margin-bottom: 6px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    input[type="text"], textarea {
+      background: #2d2d2d;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-bright);
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+    textarea { flex: 1 1 auto; height: 100%; min-height: 0; font-family: ui-monospace, Consolas, monospace; line-height: 1.5; resize: none; }
+
+    .btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      font-size: 0.74rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      height: 28px;
+    }
+    .btn:hover { background: #37373d; }
+    .btn.primary { background: var(--accent); color: #ffffff; border: none; }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn.danger { background: rgba(241, 76, 76, 0.15); color: var(--danger); border-color: rgba(241, 76, 76, 0.3); }
+    .btn.danger:hover { background: var(--danger); color: #ffffff; }
+
+    .card-item {
+      padding: 6px 8px;
+      background: var(--surface-elevated);
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      margin-bottom: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-item:hover { border-color: var(--border); }
+    .card-item.active { border-color: var(--accent); background: rgba(0, 122, 204, 0.2); }
+    .card-title { font-weight: 600; font-size: 0.78rem; color: var(--text-bright); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .card-del-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 4px; }
+    .card-del-btn:hover { color: var(--danger); }
+
+    .prop-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.72rem; }
+    .prop-key { color: var(--text-muted); }
+    .prop-val { font-weight: 600; font-family: monospace; color: var(--text-bright); }
+
+    /* Deploy Modal Window */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(2px);
+      z-index: 50000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .modal-box {
+      background: #252526;
+      border: 1px solid #454545;
+      border-radius: 6px;
+      width: 900px;
+      max-width: 100%;
+      height: 85vh;
+      max-height: 640px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    }
+    .modal-header {
+      height: 38px;
+      background: #1e1e1e;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+    .modal-tabs {
+      display: flex;
+      gap: 5px;
+      background: #181818;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .modal-tab-btn {
+      background: #2d2d2d;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .modal-tab-btn:hover { background: #383838; color: #fff; }
+    .modal-tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      border-color: var(--accent-hover);
+    }
+    .modal-code-view {
+      flex: 1 1 auto;
+      padding: 14px;
+      background: #1e1e1e;
+      color: #89d185;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.80rem;
+      line-height: 1.5;
+      overflow: auto;
+      border: none;
+      resize: none;
+      outline: none;
+      white-space: pre;
+    }
+    .modal-footer {
+      height: 46px;
+      background: #1e1e1e;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+
+    /* Logger Drawer UI */
+    .log-dock {
+      position: fixed; inset: auto 0 0; z-index: 10000; width: 100%;
+      border-top: 1px solid #2d2d2d; background: #181818; color: #cccccc;
+      font: 10px/1 ui-monospace, monospace;
+    }
+    .log-dock [hidden] { display: none !important; }
+    .log-dock [data-level="error"] { --log-color: #f14c4c; }
+    .log-dock [data-level="warn"] { --log-color: #cca700; }
+    .log-dock [data-level="info"] { --log-color: #007acc; }
+    .log-dock [data-level="success"] { --log-color: #89d185; }
+    .log-dock [data-level="all"] { --log-color: #ffffff; }
+
+    .log-dock .log-handle { width: 100%; height: 4px; background: var(--border); cursor: row-resize; }
+    .log-dock .log-handle:hover, .log-dock.is-resizing .log-handle { background: var(--accent); }
+    .log-dock .log-bar { display: flex; align-items: center; gap: 5px; height: 20px; padding: 1px 8px; }
+    .log-dot { width: 6px; height: 6px; border-radius: 50%; background: #007acc; }
+    .log-dot[data-mode="online"] { background: #89d185; }
+    .log-dot[data-mode="offline"] { background: #cca700; }
+    .log-dock .log-filters { display: inline-flex; gap: 1px; border: 1px solid #2d2d2d; border-radius: 3px; background: #252526; }
+    .log-dock .log-btn { background: transparent; border: none; color: var(--log-color, #cccccc); font: inherit; font-size: 9.5px; padding: 1px 4px; cursor: pointer; }
+    .log-dock .log-btn:hover { background: #333333; }
+    .log-dock .log-btn[aria-pressed="true"] { background: #37373d; font-weight: 700; }
+    .log-dock .log-actions { display: flex; gap: 3px; margin-left: auto; }
+    .log-dock .log-actions .log-btn { border: 1px solid #2d2d2d; padding: 1px 5px; border-radius: 3px; }
+    .log-dock .log-actions .log-copy-btn { background: #007acc; color: #fff; }
+    .log-dock .log-body { padding: 4px 8px 6px; overflow: auto; font-size: 10.5px; }
+    .log-dock .log-stream { display: grid; gap: 3px; }
+    .log-dock .log-entry { display: flex; flex-wrap: wrap; gap: 2px 6px; padding: 3px 6px; border-left: 2px solid var(--log-color); background: #1e1e1e; }
+    .log-dock .log-time { color: var(--text-muted); font-size: 9.5px; }
+    .log-dock .log-level { color: var(--log-color); font-size: 9.5px; font-weight: 700; }
+    .log-dock .log-cat { color: #858585; font-size: 9.5px; border: 1px solid #2d2d2d; border-radius: 2px; padding: 0 3px; }
+    .log-dock .log-meta { color: var(--text-muted); background: #252526; font-size: 10px; border-radius: 2px; padding: 0 4px; }
+    .log-space { display: block; width: 100%; height: 0; pointer-events: none; }
+  </style>
+
+  <!-- [A] OBSERVABILITY DIAGNOSTIC ENGINE -->
+  <script id="logger-source">
+    (function (global) {
+      'use strict';
+      const levels = { error: 'ERR', warn: 'WARN', info: 'INFO', success: 'SUCC', debug: 'DBG' };
+      const defaults = { max: 250, height: 180, open: false, persist: true, key: 'ts_logger_dock_state_v8' };
+      let options = { ...defaults };
+      let entries = [];
+      let active = 'all';
+      let opened = false;
+      let height = 180;
+      let ui = null;
+      let frame = 0, saveTimer = 0;
+
+      function json(val, ind) {
+        try { return JSON.stringify(val, null, ind) ?? 'null'; } catch (_) { return '"[Unserializable]"'; }
+      }
+      function limit(val, fb, min, max) {
+        return typeof val === 'number' && Number.isFinite(val) ? Math.round(Math.min(max, Math.max(min, val))) : fb;
+      }
+      function node(tag, cls, content) {
+        const el = document.createElement(tag);
+        if (cls) el.className = cls;
+        if (content !== undefined) el.textContent = content;
+        return el;
+      }
+      function button(label, title) {
+        const el = node('button', 'log-btn', label);
+        el.type = 'button';
+        el.title = title;
+        return el;
+      }
+      function syncSpace() {
+        if (!ui) return;
+        const size = `${Math.ceil(ui.dock.getBoundingClientRect().height)}px`;
+        ui.space.style.height = size;
+        document.documentElement.style.setProperty('--log-space', size);
+      }
+      function maxHeight() {
+        const vh = global.visualViewport ? global.visualViewport.height : global.innerHeight;
+        return Math.max(0, Math.floor(vh * 0.7 - 24));
+      }
+      function restoreState() {
+        if (!options.persist) return;
+        try {
+          const saved = JSON.parse(localStorage.getItem(options.key));
+          if (!saved) return;
+          if (typeof saved.open === 'boolean') opened = saved.open;
+          if (typeof saved.height === 'number') height = limit(saved.height, height, 50, 1200);
+        } catch (_) {}
+      }
+      function saveSoon() {
+        if (!options.persist) return;
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          try { localStorage.setItem(options.key, json({ open: opened, height })); } catch (_) {}
+        }, 150);
+      }
+      function layout() {
+        if (!ui) return;
+        const max = maxHeight();
+        height = Math.min(max, Math.max(Math.min(50, max), height));
+        ui.body.hidden = !opened;
+        ui.body.style.height = `${height}px`;
+        ui.toggle.textContent = opened ? '[ย่อ]' : '[ขยาย]';
+        syncSpace();
+        saveSoon();
+      }
+      function row(entry) {
+        const el = node('div', 'log-entry');
+        el.dataset.level = entry.level;
+        const time = node('time', 'log-time', new Date(entry.time).toLocaleTimeString('en-GB', { hour12: false }));
+        el.append(time, node('span', 'log-level', levels[entry.level]), node('span', 'log-cat', entry.category), node('span', 'log-msg', entry.message));
+        if (entry.meta) el.append(node('code', 'log-meta', json(entry.meta)));
+        return el;
+      }
+      function render() {
+        cancelAnimationFrame(frame);
+        frame = 0;
+        if (!ui) return;
+        const follow = ui.body.scrollHeight - ui.body.scrollTop - ui.body.clientHeight < 32;
+        const oldTop = ui.body.scrollTop;
+        const counts = { all: entries.length, error: 0, warn: 0, info: 0, success: 0, debug: 0 };
+        const fragment = document.createDocumentFragment();
+
+        for (const entry of entries) {
+          counts[entry.level]++;
+          if (active === 'all' || active === entry.level) fragment.append(row(entry));
+        }
+        ui.stream.replaceChildren(fragment);
+        for (const [level, control] of Object.entries(ui.filters)) {
+          control.count.textContent = counts[level];
+          control.btn.setAttribute('aria-pressed', String(active === level));
+        }
+        ui.body.scrollTop = follow ? ui.body.scrollHeight : oldTop;
+      }
+      function log(category, level, message, meta = null) {
+        level = String(level).toLowerCase();
+        if (!Object.hasOwn(levels, level)) level = 'info';
+        entries.push({
+          time: new Date().toISOString(),
+          category: String(category).trim().toUpperCase() || 'STAGE',
+          level,
+          message: String(message),
+          meta
+        });
+        if (entries.length > options.max) entries.shift();
+        if (level === 'error' && !opened && ui) toggle(true);
+        if (ui && !frame) frame = requestAnimationFrame(render);
+      }
+      function toggle(value) {
+        opened = typeof value === 'boolean' ? value : !opened;
+        layout();
+        if (ui && opened) ui.body.scrollTop = ui.body.scrollHeight;
+      }
+      function resize() {
+        let drag = null;
+        ui.handle.addEventListener('pointerdown', e => {
+          if (!e.isPrimary || e.button !== 0) return;
+          e.preventDefault();
+          const max = maxHeight();
+          const pointerH = (window.innerHeight - e.clientY) - ui.bar.offsetHeight;
+          if (!opened) {
+            opened = true;
+            height = limit(pointerH, height, 50, max);
+            layout();
+          }
+          drag = { startY: e.clientY, startH: ui.body.getBoundingClientRect().height || height, id: e.pointerId };
+          ui.handle.setPointerCapture?.(e.pointerId);
+          ui.dock.classList.add('is-resizing');
+        });
+        ui.handle.addEventListener('pointermove', e => {
+          if (!drag || drag.id !== e.pointerId) return;
+          height = Math.min(maxHeight(), Math.max(50, Math.round(drag.startH + (drag.startY - e.clientY))));
+          layout();
+        });
+        const finish = (e) => {
+          if (!drag || drag.id !== e.pointerId) return;
+          drag = null;
+          ui.dock.classList.remove('is-resizing');
+          saveSoon();
+        };
+        ui.handle.addEventListener('pointerup', finish);
+        ui.handle.addEventListener('pointercancel', finish);
+      }
+      function init(config = {}) {
+        if (ui || !document.body) return api;
+        options = { ...defaults, ...config };
+        restoreState();
+
+        const dock = node('aside', 'log-dock');
+        const handle = node('div', 'log-handle');
+        const bar = node('div', 'log-bar');
+        const dot = node('span', 'log-dot');
+        const filters = node('div', 'log-filters');
+        const controls = {};
+
+        for (const [level, label] of Object.entries({ all: 'ALL', ...levels })) {
+          const btn = button(`${label} `, `Filter ${label}`);
+          btn.dataset.level = level;
+          const count = node('span', 'log-count', '0');
+          btn.append(count);
+          filters.append(btn);
+          controls[level] = { btn, count };
+          btn.addEventListener('click', () => { active = level; render(); });
+        }
+
+        const actions = node('div', 'log-actions');
+        const copyBtn = button('⧉ AI Output', 'Copy logs for AI analysis');
+        copyBtn.classList.add('log-copy-btn');
+        const clearBtn = button('ล้าง', 'Clear logs');
+        const toggleBtn = button('[ขยาย]', 'Toggle drawer');
+        actions.append(copyBtn, clearBtn, toggleBtn);
+        bar.append(dot, filters, actions);
+
+        const body = node('div', 'log-body');
+        const stream = node('div', 'log-stream');
+        body.append(stream);
+        dock.append(handle, bar, body);
+        const space = node('div', 'log-space');
+
+        ui = { dock, handle, bar, dot, filters: controls, body, stream, copyBtn, space, toggle: toggleBtn };
+        document.body.append(space, dock);
+
+        toggleBtn.addEventListener('click', () => toggle());
+        clearBtn.addEventListener('click', () => { entries = []; render(); });
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(JSON.stringify(entries, null, 2));
+            copyBtn.textContent = 'Copied';
+            setTimeout(() => { if (copyBtn) copyBtn.textContent = '⧉ AI Output'; }, 1500);
+          } catch (_) {}
+        });
+
+        global.addEventListener('resize', layout);
+        resize();
+        layout();
+        render();
+        return api;
+      }
+
+      const api = { init, log, toggle, setMode: (m) => { if (ui) ui.dot.dataset.mode = m; } };
+      for (const level of Object.keys(levels)) {
+        api[level] = (cat, msg, meta) => log(cat, level, msg, meta);
+      }
+      global.Logger = Object.freeze(api);
+    })(window);
+
+    window.onerror = function (msg, src, lin, col, err) {
+      window.Logger?.log('FATAL-ERROR', 'error', `${msg} [${src ? src.split('/').pop() : 'inline'}:${lin}:${col}]`, { stack: err?.stack });
+      return false;
+    };
+    window.onunhandledrejection = function (e) {
+      window.Logger?.log('UNHANDLED-PROMISE', 'error', `Promise: ${e.reason?.message || e.reason}`);
+    };
+  </script>
+
+  <!-- [B] UNIFIED STORAGE DRIVER (OPFS PRIMARY + LOCALSTORAGE FALLBACK) -->
+  <script id="fs-source">
+    (function (global) {
+      'use strict';
+
+      class FileSystemDriver {
+        #rootDir = null;
+        #prefix = 'ts_fs_';
+
+        async #getDir() {
+          if (!this.#rootDir) {
+            if (!navigator.storage?.getDirectory) {
+              throw new Error('OPFS_UNSUPPORTED');
+            }
+            this.#rootDir = await navigator.storage.getDirectory();
+          }
+          return this.#rootDir;
+        }
+
+        async read(path) {
+          try {
+            const root = await this.#getDir();
+            const handle = await root.getFileHandle(path);
+            const file = await handle.getFile();
+            return await file.text();
+          } catch (err) {
+            if (err.name === 'NotFoundError') return null;
+            return localStorage.getItem(this.#prefix + path);
+          }
+        }
+
+        async write(path, content) {
+          try {
+            const root = await this.#getDir();
+            const handle = await root.getFileHandle(path, { create: true });
+            const writable = await handle.createWritable();
+            await writable.write(content);
+            await writable.close();
+          } catch (_) {
+            localStorage.setItem(this.#prefix + path, content);
+          }
+        }
+
+        async remove(path) {
+          try {
+            const root = await this.#getDir();
+            await root.removeEntry(path);
+          } catch (_) {
+            localStorage.removeItem(this.#prefix + path);
+          }
+        }
+
+        async list() {
+          try {
+            const root = await this.#getDir();
+            const files = [];
+            for await (const [name, handle] of root.entries()) {
+              if (handle.kind === 'file') files.push(name);
+            }
+            return files;
+          } catch (_) {
+            return Object.keys(localStorage)
+              .filter(k => k.startsWith(this.#prefix))
+              .map(k => k.replace(this.#prefix, ''));
+          }
+        }
+      }
+
+      global.FS = Object.freeze(new FileSystemDriver());
+    })(window);
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- [C] CORE APPLICATION RUNTIME SCRIPT -->
+  <script id="app-source">
+    (function () {
+      'use strict';
+
+      /* --- [1] UTILITIES (DOM & Thai IME Engine) --- */
+      const $ = (sel, parent = document) => parent.querySelector(sel);
+      const $$ = (sel, parent = document) => [...parent.querySelectorAll(sel)];
+
+      const delegate = (parent, eventType, selector, handler) => {
+        parent.addEventListener(eventType, (e) => {
+          const target = e.target.closest(selector);
+          if (target && parent.contains(target)) {
+            handler(e, target);
+          }
+        });
+      };
+
+      const exportMarkdown = (filename, content = '') => {
+        const blob = new Blob(['\uFEFF' + content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename.endsWith('.md') ? filename : `${filename}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const segmenter = window.Intl?.Segmenter ? new Intl.Segmenter('th', { granularity: 'grapheme' }) : null;
+      const getVisualLength = (str = '') => {
+        if (!segmenter) return str.length;
+        let count = 0;
+        for (const _ of segmenter.segment(str)) count++;
+        return count;
+      };
+
+      /* --- [2] STATE STORE WITH EMBEDDED KNOWLEDGE BASE --- */
+      const WORKSPACE_FILE = 'workspace_session.json';
+
+      class WorkspaceStateStore {
+        #subscribers = new Set();
+        #saveTimer = null;
+
+        constructor() {
+          this.projects = [
+            {
+              id: 'doc_index',
+              filename: 'index.md',
+              category: 'Architecture',
+              description: `# แผนผังโครงสร้างระบบ (Codebase Map & Structural Index)\n\nเอกสารนี้บอกตำแหน่งและหน้าที่ของแต่ละส่วนในสถาปัตยกรรม 4 เสาหลัก (4 Decoupled Pillars)\n\n## 1. ผังไฟล์เดี่ยว (index.html)\n\`\`\`text\nindex.html\n├── <head>\n│    ├── <style id="app-style">        [Design Tokens & Layout CSS]\n│    ├── <script id="logger-source">   [1. Observability: window.Logger]\n│    └── <script id="fs-source">       [2. Storage Engine: window.FS (OPFS)]\n└── <body>\n     ├── <div id="root">               [Viewport Container]\n     └── <script id="app-source">\n          ├── [1] UTILITIES            [DOM Helpers & Thai Typography Engine]\n          ├── [2] STATE STORE          [3. State Domain: WorkspaceStateStore]\n          ├── [3] BUNDLE EXTRACTOR     [Live Runtime Reflection (📦 Deploy)]\n          ├── [4] UI CONTROLLER        [4. Presentation: WorkspaceUI]\n          └── [5] BOOTSTRAP            [System Initialization]\n\`\`\`\n\n## 2. หน้าที่ของแต่ละส่วน\n- \`window.Logger\`: จัดการ Telemetry, Circular Buffer 250 รายการ และปุ่ม ⧉ AI Output\n- \`window.FS\`: I/O Filesystem จัดการ OPFS และ LocalStorage Fallback\n- \`WorkspaceStateStore\`: คุม State ในหน่วยความจำด้วย Pub/Sub พร้อม Debounce Save 400ms\n- \`WorkspaceUI\`: จัดการ DOM แบบ Mount-Once, Event Delegation และ Thai IME Guard`,
+              updatedAt: new Date().toISOString()
+            },
+            {
+              id: 'doc_handoff',
+              filename: 'handoff.md',
+              category: 'Guidelines',
+              description: `# กฎเกณฑ์และข้อพึงระวังสำหรับ AI (Engineering Handoff Protocol)\n\n## 1. กฎเหล็กเชิงสถาปัตยกรรม (Strict Core Rules)\n1. **Zero Framework / Zero Dependency:** ห้ามติดตั้ง React, Vue, jQuery ทุกอย่างต้องรันด้วย Web Standard APIs บริสุทธิ์\n2. **Self-Extracting Pattern:** ห้ามเขียนสตริงโค้ดซ้ำซ้อนในตัวแปร ปุ่ม 📦 Deploy จะต้องสกัดสดจาก Memory และ DOM เท่านั้น\n3. **Mount-Once Lifecycle:** เมธอด \`mount()\` ต้องทำงานครั้งเดียวตลอดอายุแอป ห้ามล้าง DOM Shell ด้วย \`innerHTML\` ทั้งหน้าจอ\n\n## 2. กฎการจัดการภาษาไทยและข้อความ\n1. **Grapheme Clusters:** ห้ามใช้ \`str.length\` นับอักขระไทย ให้ใช้ \`getVisualLength()\` ผ่าน \`Intl.Segmenter\` เสมอ\n2. **IME Composition Guard:** ใช้ธง \`isComposing\` ดัก \`compositionstart\` / \`compositionend\` ป้องกันสระและวรรณยุกต์กระโดดหลุด\n3. **BOM UTF-8:** เมื่อ Export ไฟล์ข้อความ ต้องเติม \`\\uFEFF\` นำหน้า Blob เสมอ ป้องกันภาษาต่างด้าวบน Windows\n\n## 3. Storage & State Performance\n1. **Decoupled FS:** จัดการ I/O ระดับดิสก์ผ่าน \`window.FS\` เท่านั้น State Store จะดูแลเฉพาะ In-Memory Data\n2. **Cursor Protection:** ก่อน Render Stage Textarea ต้องเช็ก \`dataset.activeId\` เสมอ เพื่อป้องกัน Focus หลุดและ Cursor Jump\n3. **Debounced Sync:** Event \`TYPING_DOC\` ต้องหน่วงเวลา Debounce 400ms ก่อนเขียนลงดิสก์`,
+              updatedAt: new Date().toISOString()
+            },
+            {
+              id: 'doc_changelog',
+              filename: 'Changelog.md',
+              category: 'Documentation',
+              description: `# บันทึกการเปลี่ยนแปลง (Changelog)\n\n## [v12.1.0-complete-clean]\n- ปรับโครงสร้างสู่ 4 เสาหลัก (Logger, FS, Store, UI) สมบูรณ์ 100%\n- ปรับปุ่ม 📦 Deploy ให้สกัดโค้ด js/fs.js ออกมาในบันเดิลครบถ้วน\n- แยก Low-level I/O ออกสู่ window.FS Standalone พร้อม Fallback ป้องกันเว็บแครชบน file:///\n- รองรับภาษาไทยสมบูรณ์ (BOM Export, Grapheme Segmenter, IME Guard)`,
+              updatedAt: new Date().toISOString()
+            }
+          ];
+          this.openTabIds = ['doc_index', 'doc_handoff', 'doc_changelog'];
+          this.activeId = 'doc_index';
+
+          this.#initStorage();
+        }
+
+        async #initStorage() {
+          try {
+            const raw = await window.FS?.read(WORKSPACE_FILE);
+            if (raw) {
+              const data = JSON.parse(raw);
+              if (data?.projects?.length) {
+                this.projects = data.projects;
+                this.openTabIds = data.openTabIds || this.openTabIds;
+                this.activeId = data.activeId || this.activeId;
+                this.notify({ type: 'STORAGE_LOADED' });
+                window.Logger?.log('STORE', 'success', 'Loaded session from disk successfully');
+              }
+            }
+          } catch (err) {
+            window.Logger?.log('STORE', 'info', 'Initialized with default session', { detail: err.message });
+          }
+        }
+
+        subscribe(cb) {
+          this.#subscribers.add(cb);
+          return () => this.#subscribers.delete(cb);
+        }
+
+        notify(event) {
+          this.#subscribers.forEach(cb => cb(event));
+        }
+
+        async save() {
+          const payload = JSON.stringify({
+            projects: this.projects,
+            openTabIds: this.openTabIds,
+            activeId: this.activeId
+          });
+
+          try {
+            await window.FS?.write(WORKSPACE_FILE, payload);
+          } catch (e) {
+            window.Logger?.log('STORE', 'error', 'Failed to save session', { error: e.message });
+          }
+        }
+
+        getActive() {
+          return this.projects.find(p => p.id === this.activeId) || null;
+        }
+
+        select(id) {
+          if (this.activeId === id) return;
+          if (!this.projects.some(p => p.id === id)) return;
+          if (!this.openTabIds.includes(id)) this.openTabIds.push(id);
+          this.activeId = id;
+          this.save();
+          window.Logger?.log('WORKSPACE', 'info', `Swapped view to: [${id}]`);
+          this.notify({ type: 'SELECT_DOC', id });
+        }
+
+        closeTab(id) {
+          if (!this.openTabIds.includes(id)) return;
+          const idx = this.openTabIds.indexOf(id);
+          this.openTabIds = this.openTabIds.filter(t => t !== id);
+          if (this.activeId === id) {
+            this.activeId = this.openTabIds.length > 0
+              ? this.openTabIds[Math.min(idx, this.openTabIds.length - 1)]
+              : null;
+          }
+          this.save();
+          window.Logger?.log('WORKSPACE', 'info', `Closed tab: [${id}]`);
+          this.notify({ type: 'CLOSE_TAB', id });
+        }
+
+        createFile() {
+          let count = 1;
+          const names = new Set(this.projects.map(p => p.filename));
+          while (names.has(`เอกสาร_${count}.md`)) count++;
+
+          const newDoc = {
+            id: `doc_${Date.now()}`,
+            filename: `เอกสาร_${count}.md`,
+            category: 'ทั่วไป',
+            description: `# เอกสาร_${count}.md\n\nเนื้อหาเอกสารเริ่มต้น...`,
+            updatedAt: new Date().toISOString()
+          };
+          this.projects.push(newDoc);
+          this.openTabIds.push(newDoc.id);
+          this.activeId = newDoc.id;
+          this.save();
+          window.Logger?.log('WORKSPACE', 'success', `Created: [${newDoc.filename}]`);
+          this.notify({ type: 'CREATE_DOC', doc: newDoc });
+        }
+
+        deleteFile(id) {
+          const target = this.projects.find(p => p.id === id);
+          if (!target || !confirm(`ยืนยันการลบไฟล์ "${target.filename}" หรือไม่?`)) return;
+
+          this.projects = this.projects.filter(p => p.id !== id);
+          this.closeTab(id);
+          this.save();
+          window.Logger?.log('WORKSPACE', 'warn', `Deleted: [${target.filename}]`);
+          this.notify({ type: 'DELETE_DOC', id });
+        }
+
+        updateActive(patch, syncImmediate = false) {
+          const active = this.getActive();
+          if (!active) return;
+
+          Object.assign(active, patch);
+          active.updatedAt = new Date().toISOString();
+
+          clearTimeout(this.#saveTimer);
+          if (syncImmediate) {
+            this.save();
+            this.notify({ type: 'UPDATE_DOC', active });
+          } else {
+            this.#saveTimer = setTimeout(() => this.save(), 400);
+            this.notify({ type: 'TYPING_DOC', active });
+          }
+        }
+      }
+
+      const store = new WorkspaceStateStore();
+
+      /* --- [3] LIVE BUNDLE EXTRACTOR (สกัดโค้ดจริง 8 โมดูลโดยไม่ Hardcode ซ้ำซ้อน) --- */
+      function getLiveProductionFiles() {
+        const cssContent = $('#app-style')?.textContent.trim() || '';
+        const loggerContent = $('#logger-source')?.textContent.trim() || '';
+        const fsContent = $('#fs-source')?.textContent.trim() || '';
+
+        const utilsSource = `// js/utils.js - Live Extracted จาก Runtime
+export const $ = (sel, parent = document) => parent.querySelector(sel);
+export const $$ = (sel, parent = document) => [...parent.querySelectorAll(sel)];
+
+export const delegate = ${delegate.toString()};
+
+export const exportMarkdown = ${exportMarkdown.toString()};
+
+const segmenter = window.Intl?.Segmenter ? new Intl.Segmenter('th', { granularity: 'grapheme' }) : null;
+export const getVisualLength = ${getVisualLength.toString()};
+`;
+
+        const storeSource = `// js/store.js - Live Extracted จาก Runtime
+const WORKSPACE_FILE = '${WORKSPACE_FILE}';
+
+export ${WorkspaceStateStore.toString()}
+
+export const store = new WorkspaceStateStore();
+`;
+
+        const appSource = `// js/app.js - Live Extracted จาก Runtime (ESM Entry)
+import { store } from './store.js';
+import { $, delegate, exportMarkdown, getVisualLength } from './utils.js';
+
+window.Logger?.init({ open: false, persist: true });
+window.Logger?.setMode(navigator.onLine ? 'online' : 'offline');
+
+${WorkspaceUI.toString()}
+
+window.addEventListener('DOMContentLoaded', () => new WorkspaceUI($('#root')));
+`;
+
+        const indexHtml = `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TS Code - Production Vanilla JS</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/logger.js"><` + `/script>
+  <script src="js/fs.js"><` + `/script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="js/app.js"><` + `/script>
+</body>
+</html>`;
+
+        const indexMdDoc = store.projects.find(p => p.filename.toLowerCase() === 'index.md');
+        const handoffMdDoc = store.projects.find(p => p.filename.toLowerCase() === 'handoff.md');
+
+        return [
+          { name: 'index.html', path: 'index.html', content: indexHtml },
+          { name: 'index.md', path: 'index.md', content: indexMdDoc?.description || '' },
+          { name: 'handoff.md', path: 'handoff.md', content: handoffMdDoc?.description || '' },
+          { name: 'css/app.css', path: 'css/app.css', content: cssContent },
+          { name: 'js/fs.js', path: 'js/fs.js', content: fsContent },
+          { name: 'js/utils.js', path: 'js/utils.js', content: utilsSource },
+          { name: 'js/store.js', path: 'js/store.js', content: storeSource },
+          { name: 'js/logger.js', path: 'js/logger.js', content: loggerContent },
+          { name: 'js/app.js', path: 'js/app.js', content: appSource }
+        ];
+      }
+
+      /* --- [4] WORKSPACE UI PRESENTATION CONTROLLER --- */
+      class WorkspaceUI {
+        constructor(root) {
+          this.root = root;
+          this.leftW = +localStorage.getItem('ts_left_dock_w') || 210;
+          this.rightW = +localStorage.getItem('ts_right_dock_w') || 220;
+          this.isComposing = false;
+
+          this.mount();
+          this.cacheDOM();
+          this.bindEvents();
+
+          store.subscribe((evt) => this.handleStateChange(evt));
+          this.refreshAll();
+        }
+
+        mount() {
+          this.root.innerHTML = `
+            <div style="display:flex; flex-direction:column; width:100%; height:100%;">
+              <header class="c3-topbar">
+                <div class="c3-topbar-left">
+                  <div class="brand-badge"><span>TS</span><span>PureJS</span></div>
+                  <select class="chapter-select" id="chapter-select"></select>
+                </div>
+                <div class="c3-topbar-right layout-control-group">
+                  <button class="bundle-btn" id="btn-open-bundle" title="ดูและดาวน์โหลดซอร์สโค้ดแยกไฟล์สำหรับ Production">📦 Deploy</button>
+                  <button class="layout-toggle-btn active" data-action="toggle-left" title="แถบซ้าย">◧</button>
+                  <button class="layout-toggle-btn active" data-action="toggle-right" title="แถบขวา">◨</button>
+                  <button class="layout-toggle-btn" data-action="toggle-logger" title="กล่อง Log">◫</button>
+                </div>
+              </header>
+
+              <div class="c3-shell">
+                <aside class="c3-dock c3-dock-left" id="left-dock" style="width:${this.leftW}px;">
+                  <div class="dock-header">
+                    <span class="dock-title-group">WORKSPACE</span>
+                    <button class="dock-btn" data-action="close-left">×</button>
+                  </div>
+                  <div class="dock-content">
+                    <div id="file-counter" style="font-size:0.7rem; color:var(--text-muted); margin-bottom:6px;"></div>
+                    <div id="file-list"></div>
+                  </div>
+                </aside>
+
+                <div class="c3-splitter" id="left-splitter"></div>
+
+                <main class="c3-stage">
+                  <div class="editor-tab-strip" id="tab-strip"></div>
+                  <div id="stage-body" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>
+                </main>
+
+                <div class="c3-splitter" id="right-splitter"></div>
+
+                <aside class="c3-dock c3-dock-right" id="right-dock" style="width:${this.rightW}px;">
+                  <div class="dock-header">
+                    <span class="dock-title-group">PROPERTIES</span>
+                    <button class="dock-btn" data-action="close-right">×</button>
+                  </div>
+                  <div class="dock-content" id="prop-content"></div>
+                </aside>
+              </div>
+            </div>
+          `;
+        }
+
+        cacheDOM() {
+          this.dom = {
+            chapterSelect: $('#chapter-select', this.root),
+            fileCounter: $('#file-counter', this.root),
+            fileList: $('#file-list', this.root),
+            tabStrip: $('#tab-strip', this.root),
+            stageBody: $('#stage-body', this.root),
+            propContent: $('#prop-content', this.root),
+            leftDock: $('#left-dock', this.root),
+            rightDock: $('#right-dock', this.root),
+            leftSplitter: $('#left-splitter', this.root),
+            rightSplitter: $('#right-splitter', this.root),
+            btnToggleLeft: $('[data-action="toggle-left"]', this.root),
+            btnToggleRight: $('[data-action="toggle-right"]', this.root),
+            btnOpenBundle: $('#btn-open-bundle', this.root)
+          };
+        }
+
+        bindEvents() {
+          this.dom.btnOpenBundle.addEventListener('click', () => this.showBundleModal());
+
+          delegate(this.root, 'click', '[data-action]', (e, target) => {
+            const act = target.dataset.action;
+            if (act === 'toggle-left') this.toggleDock('left');
+            if (act === 'close-left') this.toggleDock('left', false);
+            if (act === 'toggle-right') this.toggleDock('right');
+            if (act === 'close-right') this.toggleDock('right', false);
+            if (act === 'toggle-logger') window.Logger?.toggle();
+          });
+
+          this.dom.chapterSelect.addEventListener('change', (e) => store.select(e.target.value));
+
+          delegate(this.dom.fileList, 'click', '.card-item', (e, target) => {
+            const delBtn = e.target.closest('[data-del]');
+            if (delBtn) {
+              store.deleteFile(delBtn.dataset.del);
+            } else {
+              store.select(target.dataset.id);
+            }
+          });
+
+          delegate(this.dom.tabStrip, 'click', '.editor-tab', (e, target) => {
+            const closeBtn = e.target.closest('[data-close]');
+            if (closeBtn) {
+              store.closeTab(closeBtn.dataset.close);
+            } else {
+              store.select(target.dataset.tab);
+            }
+          });
+
+          this.setupSplitter(this.dom.leftSplitter, (dx, start) => {
+            this.leftW = Math.min(480, Math.max(140, start + dx));
+            this.dom.leftDock.style.width = `${this.leftW}px`;
+            localStorage.setItem('ts_left_dock_w', this.leftW);
+          });
+
+          this.setupSplitter(this.dom.rightSplitter, (dx, start) => {
+            this.rightW = Math.min(480, Math.max(160, start - dx));
+            this.dom.rightDock.style.width = `${this.rightW}px`;
+            localStorage.setItem('ts_right_dock_w', this.rightW);
+          });
+        }
+
+        showBundleModal() {
+          $('.modal-overlay')?.remove();
+
+          const prodFiles = getLiveProductionFiles();
+          let currentIdx = 0;
+
+          const overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          overlay.innerHTML = `
+            <div class="modal-box">
+              <div class="modal-header">
+                <span style="font-weight:700; font-size:0.85rem; color:#fff;">📦 Production Code Bundle (Live Extracted)</span>
+                <button class="dock-btn" id="btn-close-modal" style="font-size:1.1rem; color:#fff;">×</button>
+              </div>
+              <div class="modal-tabs" id="bundle-tabs">
+                ${prodFiles.map((f, i) => `
+                  <button class="modal-tab-btn ${i === 0 ? 'active' : ''}" data-idx="${i}">${f.name}</button>
+                `).join('')}
+              </div>
+              <textarea class="modal-code-view" id="bundle-code" readonly spellcheck="false">${prodFiles[0].content}</textarea>
+              <div class="modal-footer">
+                <span style="font-size:0.75rem; color:var(--text-muted);" id="bundle-file-info">Path: ${prodFiles[0].path}</span>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn" id="btn-download-file">💾 ดาวน์โหลดไฟล์นี้</button>
+                  <button class="btn primary" id="btn-copy-code">📋 Copy Code</button>
+                </div>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(overlay);
+
+          const codeView = $('#bundle-code', overlay);
+          const fileInfo = $('#bundle-file-info', overlay);           const tabs = $$('.modal-tab-btn', overlay);
+          const copyBtn = $('#btn-copy-code', overlay);
+          const dlBtn = $('#btn-download-file', overlay);
+
+          tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+              tabs.forEach(t => t.classList.remove('active'));
+              tab.classList.add('active');
+              currentIdx = +tab.dataset.idx;
+              codeView.value = prodFiles[currentIdx].content;
+              fileInfo.textContent = `Path: ${prodFiles[currentIdx].path}`;
+            });
+          });
+
+          copyBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(codeView.value);
+              copyBtn.textContent = '✓ Copied!';
+              setTimeout(() => { copyBtn.textContent = '📋 Copy Code'; }, 1500);
+              window.Logger?.log('BUNDLE', 'success', `Copied [${prodFiles[currentIdx].name}]`);
+            } catch (_) {}
+          });
+
+          dlBtn.addEventListener('click', () => {
+            const file = prodFiles[currentIdx];
+            const blob = new Blob(['\uFEFF' + file.content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name.split('/').pop();
+            a.click();
+            URL.revokeObjectURL(url);
+            window.Logger?.log('BUNDLE', 'success', `Downloaded [${file.name}]`);
+          });
+
+          $('#btn-close-modal', overlay).addEventListener('click', () => overlay.remove());
+          overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+        }
+
+        setupSplitter(splitterEl, onDrag) {
+          splitterEl.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            const startX = e.clientX;
+            const startW = splitterEl === this.dom.leftSplitter ? this.leftW : this.rightW;
+            splitterEl.setPointerCapture?.(e.pointerId);
+            splitterEl.classList.add('is-dragging');
+
+            const move = (ev) => onDrag(ev.clientX - startX, startW);
+            const stop = () => {
+              splitterEl.classList.remove('is-dragging');
+              window.removeEventListener('pointermove', move);
+              window.removeEventListener('pointerup', stop);
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', stop);
+          });
+        }
+
+        toggleDock(side, force) {
+          const isLeft = side === 'left';
+          const dock = isLeft ? this.dom.leftDock : this.dom.rightDock;
+          const splitter = isLeft ? this.dom.leftSplitter : this.dom.rightSplitter;
+          const btn = isLeft ? this.dom.btnToggleLeft : this.dom.btnToggleRight;
+
+          const nextState = force ?? (dock.style.display === 'none');
+          dock.style.display = nextState ? 'flex' : 'none';
+          splitter.style.display = nextState ? 'block' : 'none';
+          btn.classList.toggle('active', nextState);
+        }
+
+        handleStateChange(evt) {
+          if (evt?.type === 'TYPING_DOC') {
+            this.renderProperties();
+            return;
+          }
+          this.refreshAll();
+        }
+
+        refreshAll() {
+          this.renderTopNav();
+          this.renderExplorer();
+          this.renderTabs();
+          this.renderStage();
+          this.renderProperties();
+        }
+
+        renderTopNav() {
+          const active = store.getActive();
+          this.dom.chapterSelect.innerHTML = `
+            ${!active ? '<option value="" disabled selected>เลือกไฟล์เอกสาร...</option>' : ''}
+            ${store.projects.map(p => `
+              <option value="${p.id}" ${active?.id === p.id ? 'selected' : ''}>${p.filename}</option>
+            `).join('')}
+          `;
+        }
+
+        renderExplorer() {
+          const active = store.getActive();
+          this.dom.fileCounter.textContent = `ไฟล์ทั้งหมด (${store.projects.length})`;
+          this.dom.fileList.innerHTML = store.projects.length === 0
+            ? '<div style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:12px;">ไม่มีไฟล์</div>'
+            : store.projects.map(p => `
+                <div class="card-item ${active?.id === p.id ? 'active' : ''}" data-id="${p.id}">
+                  <span class="card-title">📝 ${p.filename}</span>
+                  <button type="button" class="card-del-btn" data-del="${p.id}" title="ลบไฟล์นี้">🗑</button>
+                </div>
+              `).join('');
+        }
+
+        renderTabs() {
+          const active = store.getActive();
+          this.dom.tabStrip.innerHTML = store.openTabIds.map(id => {
+            const doc = store.projects.find(d => d.id === id);
+            if (!doc) return '';
+            return `
+              <div class="editor-tab ${active?.id === doc.id ? 'active' : ''}" data-tab="${doc.id}">
+                <span>📝 ${doc.filename}</span>
+                <button type="button" class="tab-close-btn" data-close="${doc.id}" title="ปิดแท็บ">×</button>
+              </div>
+            `;
+          }).join('');
+        }
+
+        renderStage() {
+          const active = store.getActive();
+          if (!active) {
+            this.dom.stageBody.innerHTML = `
+              <div class="stage-empty-box">
+                <div class="stage-empty-title">ไม่มีไฟล์ที่เปิดใช้งาน</div>
+                <p style="font-size:0.78rem; margin-bottom:14px;">เลือกไฟล์จากแถบซ้าย หรือสร้างเอกสารใหม่</p>
+                <button class="btn primary" id="btn-create-empty">＋ สร้างเอกสารใหม่</button>
+              </div>
+            `;
+            $('#btn-create-empty', this.dom.stageBody)?.addEventListener('click', () => store.createFile());
+            return;
+          }
+
+          const currentBox = $('.stage-editor-box', this.dom.stageBody);
+          if (currentBox?.dataset.activeId === active.id) {
+            return;
+          }
+
+          this.dom.stageBody.innerHTML = `
+            <div class="stage-editor-box" data-active-id="${active.id}">
+              <div class="stage-action-bar">
+                <div class="stage-action-bar-left">
+                  <label>ชื่อไฟล์</label>
+                  <input type="text" id="stage-name-input" value="${active.filename}" />
+                </div>
+                <div class="stage-action-bar-right">
+                  <button class="btn primary" id="btn-save-doc">💾 บันทึก</button>
+                  <button class="btn" id="btn-export-doc">📤 Export</button>
+                  <button class="btn danger" id="btn-del-doc">🗑 ลบ</button>
+                </div>
+              </div>
+              <div class="form-group" style="flex:1; min-height:0; display:flex;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <label>MARKDOWN CONTENT (<span id="stage-cat-label">${active.category}</span>)</label>
+                  <span id="line-indicator" style="font-size:0.68rem; color:var(--text-muted);">
+                    Ln ${(active.description || '').split('\n').length}, Col 1
+                  </span>
+                </div>
+                <textarea id="stage-desc-input" placeholder="// เขียนเนื้อหาไฟล์ที่นี่..." spellcheck="false">${active.description || ''}</textarea>
+              </div>
+            </div>
+          `;
+
+          const descInput = $('#stage-desc-input', this.dom.stageBody);
+          const nameInput = $('#stage-name-input', this.dom.stageBody);
+          const lineIndicator = $('#line-indicator', this.dom.stageBody);
+
+          descInput.addEventListener('compositionstart', () => { this.isComposing = true; });
+          descInput.addEventListener('compositionend', (e) => {
+            this.isComposing = false;
+            store.updateActive({ description: e.target.value });
+          });
+
+          descInput.addEventListener('input', (e) => {
+            lineIndicator.textContent = `Ln ${e.target.value.split('\n').length}, Col 1`;
+            if (!this.isComposing) {
+              store.updateActive({ description: e.target.value });
+            }
+          });
+
+          nameInput.addEventListener('input', (e) => {
+            store.updateActive({ filename: e.target.value });
+          });
+
+          $('#btn-save-doc', this.dom.stageBody).addEventListener('click', () => {
+            store.save();
+            window.Logger?.log('STAGE', 'success', `บันทึก [${active.filename}] สำเร็จ`);
+          });
+
+          $('#btn-export-doc', this.dom.stageBody).addEventListener('click', () => {
+            exportMarkdown(active.filename, active.description);
+          });
+
+          $('#btn-del-doc', this.dom.stageBody).addEventListener('click', () => {
+            store.deleteFile(active.id);
+          });
+        }
+
+        renderProperties() {
+          const active = store.getActive();
+          if (!active) {
+            this.dom.propContent.innerHTML = '<div style="color:var(--text-muted); font-size:0.72rem; text-align:center; padding:16px 0;">ไม่มีข้อมูล</div>';
+            return;
+          }
+
+          const text = active.description || '';
+          this.dom.propContent.innerHTML = `
+            <div class="prop-row"><span class="prop-key">หมวดหมู่</span><span class="prop-val">${active.category}</span></div>
+            <div class="prop-row"><span class="prop-key">จำนวนตัวอักษรจริง</span><span class="prop-val">${getVisualLength(text)}</span></div>
+            <div class="prop-row"><span class="prop-key">บรรทัด</span><span class="prop-val">${text.split('\n').length}</span></div>
+            <div class="prop-row"><span class="prop-key">แก้ไขล่าสุด</span><span class="prop-val">${new Date(active.updatedAt || Date.now()).toLocaleTimeString('th-TH')}</span></div>
+            <div style="margin-top:14px;" class="form-group">
+              <label>แก้ไขหมวดหมู่</label>
+              <input type="text" id="prop-cat-input" value="${active.category}" />
+            </div>
+          `;
+
+          $('#prop-cat-input', this.dom.propContent)?.addEventListener('input', (e) => {
+            store.updateActive({ category: e.target.value }, true);
+            const label = $('#stage-cat-label', this.dom.stageBody);
+            if (label) label.textContent = e.target.value;
+          });
+        }
+      }
+
+      /* --- [5] BOOTSTRAP WORKSPACE --- */
+      window.Logger?.init({ open: false, persist: true });
+      window.Logger?.setMode(navigator.onLine ? 'online' : 'offline');
+
+      new WorkspaceUI($('#root'));
+    })();
+  </script>
+</body>
+</html>
